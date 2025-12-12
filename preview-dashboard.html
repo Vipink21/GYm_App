@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitZone Admin - Preview</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --color-gold-primary: #D4AF37;
+            --color-gold-secondary: #C8A23F;
+            --color-gold-light: #F5E6B8;
+            --color-bg-primary: #FAF7F0;
+            --color-bg-card: #FFFFFF;
+            --color-bg-cream: #FFF9EE;
+            --color-text-primary: #222222;
+            --color-text-secondary: #6D6D6D;
+            --color-text-muted: #9A9A9A;
+            --color-success: #2EC97A;
+            --color-error: #FF4D4D;
+            --color-border: #E4DFD2;
+            --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08);
+            --shadow-gold: 0 4px 12px rgba(212, 175, 55, 0.25);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-bg-primary);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--color-bg-card);
+            border-right: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 24px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--color-gold-primary), var(--color-gold-secondary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+
+        .logo-text {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .logo-subtitle {
+            font-size: 11px;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .nav {
+            flex: 1;
+            padding: 16px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 4px;
+            transition: all 0.15s;
+        }
+
+        .nav-item:hover {
+            background: var(--color-bg-cream);
+            color: var(--color-text-primary);
+        }
+
+        .nav-item.active {
+            background: var(--color-bg-cream);
+            color: var(--color-gold-primary);
+            border-left: 3px solid var(--color-gold-primary);
+        }
+
+        .nav-divider {
+            height: 1px;
+            background: var(--color-border);
+            margin: 16px 0;
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            margin-left: 280px;
+        }
+
+        .header {
+            height: 72px;
+            background: var(--color-bg-card);
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            position: sticky;
+            top: 0;
+        }
+
+        .header h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .search {
+            width: 280px;
+            height: 40px;
+            padding: 0 16px 0 40px;
+            border: 1px solid var(--color-border);
+            border-radius: 999px;
+            background: var(--color-bg-primary);
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 32px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--color-bg-card);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .stat-title {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-family: 'Poppins', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .stat-change {
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 4px;
+        }
+
+        .stat-change.up {
+            color: var(--color-success);
+        }
+
+        .stat-change.down {
+            color: var(--color-error);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .stat-icon.gold {
+            background: var(--color-bg-cream);
+        }
+
+        .stat-icon.green {
+            background: #E8F8F0;
+        }
+
+        .stat-icon.blue {
+            background: #EBF3FC;
+        }
+
+        .stat-icon.purple {
+            background: #F3E8FF;
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--color-bg-card);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-header {
+            font-family: 'Poppins', sans-serif;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 0;
+            border-bottom: 1px solid #F0EBE0;
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-gold-primary), var(--color-gold-secondary));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .list-content {
+            flex: 1;
+        }
+
+        .list-name {
+            font-weight: 500;
+        }
+
+        .list-sub {
+            font-size: 13px;
+            color: var(--color-text-muted);
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge.warning {
+            background: #FEF6E7;
+            color: #92400E;
+        }
+
+        .badge.urgent {
+            background: #FFEBEB;
+            color: var(--color-error);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">🏋️</div>
+            <div>
+                <div class="logo-text">FitZone</div>
+                <div class="logo-subtitle">Admin Portal</div>
+            </div>
+        </div>
+        <nav class="nav">
+            <div class="nav-item active">📊 Dashboard</div>
+            <div class="nav-item">👥 Members</div>
+            <div class="nav-item">🏃 Trainers</div>
+            <div class="nav-item">📅 Classes</div>
+            <div class="nav-divider"></div>
+            <div class="nav-item">✓ Attendance</div>
+            <div class="nav-item">💳 Payments</div>
+            <div class="nav-divider"></div>
+            <div class="nav-item">⚙️ Settings</div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main">
+        <header class="header">
+            <h1>Dashboard</h1>
+            <input type="text" class="search" placeholder="🔍 Search...">
+        </header>
+
+        <main class="content">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title">Total Members</div>
+                        <div class="stat-value">1,247</div>
+                        <div class="stat-change up">↑ 12.5%</div>
+                    </div>
+                    <div class="stat-icon gold">👥</div>
+                </div>
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title">Active Trainers</div>
+                        <div class="stat-value">24</div>
+                        <div class="stat-change up">↑ 4.2%</div>
+                    </div>
+                    <div class="stat-icon green">🏃</div>
+                </div>
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title">Revenue (Month)</div>
+                        <div class="stat-value">₹4.8L</div>
+                        <div class="stat-change up">↑ 8.1%</div>
+                    </div>
+                    <div class="stat-icon blue">💳</div>
+                </div>
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-title">Check-ins Today</div>
+                        <div class="stat-value">156</div>
+                        <div class="stat-change down">↓ 2.3%</div>
+                    </div>
+                    <div class="stat-icon purple">✓</div>
+                </div>
+            </div>
+
+            <!-- Cards Grid -->
+            <div class="cards-grid">
+                <div class="card">
+                    <div class="card-header">Recent Members</div>
+                    <div class="list-item">
+                        <div class="avatar">R</div>
+                        <div class="list-content">
+                            <div class="list-name">Rahul Sharma</div>
+                            <div class="list-sub">Gold Annual</div>
+                        </div>
+                        <div class="list-sub">Dec 10</div>
+                    </div>
+                    <div class="list-item">
+                        <div class="avatar">P</div>
+                        <div class="list-content">
+                            <div class="list-name">Priya Patel</div>
+                            <div class="list-sub">Silver Monthly</div>
+                        </div>
+                        <div class="list-sub">Dec 10</div>
+                    </div>
+                    <div class="list-item">
+                        <div class="avatar">A</div>
+                        <div class="list-content">
+                            <div class="list-name">Amit Kumar</div>
+                            <div class="list-sub">Gold Annual</div>
+                        </div>
+                        <div class="list-sub">Dec 9</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Expiring Soon</div>
+                    <div class="list-item">
+                        <div class="avatar">V</div>
+                        <div class="list-content">
+                            <div class="list-name">Vikram Singh</div>
+                            <div class="list-sub">Gold Plan</div>
+                        </div>
+                        <span class="badge urgent">3 days</span>
+                    </div>
+                    <div class="list-item">
+                        <div class="avatar">A</div>
+                        <div class="list-content">
+                            <div class="list-name">Anita Desai</div>
+                            <div class="list-sub">Silver Plan</div>
+                        </div>
+                        <span class="badge warning">5 days</span>
+                    </div>
+                    <div class="list-item">
+                        <div class="avatar">R</div>
+                        <div class="list-content">
+                            <div class="list-name">Rajesh Nair</div>
+                            <div class="list-sub">Gold Plan</div>
+                        </div>
+                        <span class="badge warning">7 days</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

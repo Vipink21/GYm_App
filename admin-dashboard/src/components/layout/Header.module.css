@@ -1,0 +1,95 @@
+.header {
+    height: var(--header-height);
+    background-color: var(--color-bg-card);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-8);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.left {
+    display: flex;
+    align-items: center;
+}
+
+.title {
+    font-size: var(--text-2xl);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.search {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.searchIcon {
+    position: absolute;
+    left: var(--space-3);
+    color: var(--color-text-muted);
+}
+
+.searchInput {
+    width: 280px;
+    height: 40px;
+    padding: 0 var(--space-4) 0 var(--space-10);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    background-color: var(--color-bg-primary);
+    font-size: var(--text-sm);
+    transition: all var(--transition-fast);
+}
+
+.searchInput:focus {
+    outline: none;
+    border-color: var(--color-gold-primary);
+    box-shadow: 0 0 0 3px var(--color-gold-light);
+}
+
+.searchInput::placeholder {
+    color: var(--color-text-muted);
+}
+
+.notificationBtn {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    transition: all var(--transition-fast);
+}
+
+.notificationBtn:hover {
+    background-color: var(--color-bg-cream);
+    color: var(--color-gold-primary);
+}
+
+.notificationBadge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-error);
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

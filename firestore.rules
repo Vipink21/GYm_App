@@ -1,0 +1,181 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============ HELPER FUNCTIONS ============
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function getUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    
+    function getUserRole() {
+      return getUserDoc().data.role;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && (getUserRole() == 'admin' || getUserRole() == 'superadmin');
+    }
+    
+    function isSuperAdmin() {
+      return isSignedIn() && getUserRole() == 'superadmin';
+    }
+    
+    function isTrainer() {
+      return isSignedIn() && getUserRole() == 'trainer';
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function belongsToSameGym(gymId) {
+      return getUserDoc().data.gymId == gymId;
+    }
+    
+    function belongsToSameBranch(branchId) {
+      return getUserDoc().data.branchId == branchId;
+    }
+    
+    // ============ COLLECTION RULES ============
+    
+    // Users
+    match /users/{userId} {
+      allow read: if isSignedIn() && (
+        isOwner(userId) ||
+        isAdmin() ||
+        (isTrainer() && resource.data.assignedTrainerId == request.auth.uid)
+      );
+      allow create: if isAdmin();
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isSuperAdmin();
+    }
+    
+    // Memberships
+    match /memberships/{membershipId} {
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      allow write: if isAdmin();
+    }
+    
+    // Membership Plans
+    match /membershipPlans/{planId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+    
+    // Workout Plans
+    match /workoutPlans/{planId} {
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin() ||
+        (isTrainer() && exists(/databases/$(database)/documents/users/$(resource.data.userId)) && 
+         get(/databases/$(database)/documents/users/$(resource.data.userId)).data.assignedTrainerId == request.auth.uid)
+      );
+      allow create: if isAdmin() || isTrainer();
+      allow update: if isAdmin() || isTrainer();
+      allow delete: if isAdmin();
+    }
+    
+    // Diet Plans
+    match /dietPlans/{planId} {
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin() ||
+        isTrainer()
+      );
+      allow create: if isAdmin() || isTrainer();
+      allow update: if isAdmin() || isTrainer();
+      allow delete: if isAdmin();
+    }
+    
+    // Progress Logs
+    match /progressLogs/{logId} {
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin() ||
+        isTrainer()
+      );
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+    
+    // Attendance
+    match /attendance/{attendanceId} {
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isAdmin() || isTrainer();
+      allow update, delete: if isAdmin();
+    }
+    
+    // Classes
+    match /classes/{classId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (isTrainer() && resource.data.trainerId == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+    
+    // Class Bookings
+    match /classBookings/{bookingId} {
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Payments
+    match /payments/{paymentId} {
+      allow read: if isSignedIn() && (
+        resource.data.userId == request.auth.uid ||
+        isAdmin()
+      );
+      allow write: if isAdmin();
+    }
+    
+    // Notifications
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+    
+    // AI Conversations
+    match /aiConversations/{conversationId} {
+      allow read, write: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Exercises (public read)
+    match /exercises/{exerciseId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+    
+    // Gyms (super admin only for write)
+    match /gyms/{gymId} {
+      allow read: if isSignedIn() && belongsToSameGym(gymId);
+      allow write: if isSuperAdmin();
+    }
+    
+    // Branches
+    match /branches/{branchId} {
+      allow read: if isSignedIn();
+      allow write: if isSuperAdmin() || (isAdmin() && belongsToSameBranch(branchId));
+    }
+    
+    // Leads
+    match /leads/{leadId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

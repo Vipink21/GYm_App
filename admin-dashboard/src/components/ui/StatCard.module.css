@@ -1,0 +1,75 @@
+.card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: var(--space-6);
+    background-color: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--color-border-light);
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.title {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.value {
+    font-family: var(--font-heading);
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.change {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    margin-top: var(--space-1);
+}
+
+.increase {
+    color: var(--color-success);
+}
+
+.decrease {
+    color: var(--color-error);
+}
+
+.iconWrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gold {
+    background-color: var(--color-bg-cream);
+    color: var(--color-gold-primary);
+}
+
+.green {
+    background-color: var(--color-success-light);
+    color: var(--color-success);
+}
+
+.blue {
+    background-color: var(--color-info-light);
+    color: var(--color-info);
+}
+
+.purple {
+    background-color: #F3E8FF;
+    color: #9333EA;
+}
