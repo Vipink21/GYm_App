@@ -1,0 +1,27 @@
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.free {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.pro {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.trial {
+    margin-left: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    font-size: 0.75rem;
+}

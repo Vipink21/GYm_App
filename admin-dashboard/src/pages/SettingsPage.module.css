@@ -28,6 +28,7 @@
     gap: var(--space-1);
 }
 
+/* Navigation Items - Updated for interactive state */
 .navItem {
     display: flex;
     align-items: center;
@@ -39,6 +40,12 @@
     font-weight: 500;
     text-decoration: none;
     transition: all var(--transition-fast);
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
 }
 
 .navItem:hover {
@@ -50,6 +57,18 @@
     background: var(--color-bg-cream);
     color: var(--color-gold-primary);
 }
+
+/* Updated Section wrappers */
+.sectionWrapper {
+    scroll-margin-top: 120px;
+}
+
+/* Styles for the Save Button State */
+.actions button:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
 
 /* Content */
 .content {

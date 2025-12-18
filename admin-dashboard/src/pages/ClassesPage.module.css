@@ -469,3 +469,100 @@
     border-top: 1px solid var(--color-border-light);
     margin-top: var(--space-4);
 }
+
+.monthGrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.monthHeaderCell {
+    padding: var(--space-3);
+    text-align: center;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    background: var(--color-bg-subtle);
+    border-bottom: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
+}
+
+.monthHeaderCell:last-child {
+    border-right: none;
+}
+
+.monthDay {
+    min-height: 100px;
+    padding: var(--space-2);
+    border-right: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    background: white;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.monthDay:nth-child(7n) {
+    border-right: none;
+}
+
+.monthDay.otherMonth {
+    background: var(--color-bg-subtle);
+    opacity: 0.5;
+}
+
+.monthDayHeader {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+}
+
+.monthDayHeader.today {
+    background: var(--color-gold-primary);
+    color: white;
+}
+
+.monthDayContent {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    overflow-y: auto;
+    max-height: 80px;
+}
+
+.monthClassDot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+}
+
+.monthClassDot.purple {
+    background-color: #9333EA;
+}
+
+.monthClassDot.red {
+    background-color: #DC2626;
+}
+
+.monthClassDot.blue {
+    background-color: #2563EB;
+}
+
+.monthClassDot.orange {
+    background-color: #EA580C;
+}
+
+.monthClassDot.pink {
+    background-color: #DB2777;
+}
+
+.monthClassDot.teal {
+    background-color: #0D9488;
+}

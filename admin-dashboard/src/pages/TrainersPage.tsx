@@ -1,93 +1,26 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Plus, Search, Filter, Download, Star, X, ChevronDown } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import styles from './TrainersPage.module.css'
+import { useAuth } from '../contexts/AuthContext'
+import { trainerService, TrainerUI } from '../services/trainerService'
+import { subscriptionService } from '../services/subscriptionService'
 
-interface Trainer {
-    id: string
-    name: string
-    phone: string
-    email: string
-    specializations: string[]
-    clients: number
-    maxClients: number
-    rating: number
-    experience: number
-    status: 'active' | 'on_leave' | 'inactive'
-}
-
-const initialTrainers: Trainer[] = [
-    {
-        id: '1',
-        name: 'Sarah Mitchell',
-        phone: '+91 98765 43210',
-        email: 'sarah@fitzone.com',
-        specializations: ['Weight Training', 'HIIT'],
-        clients: 18,
-        maxClients: 25,
-        rating: 4.9,
-        experience: 5,
-        status: 'active'
-    },
-    {
-        id: '2',
-        name: 'Mike Thompson',
-        phone: '+91 87654 32109',
-        email: 'mike@fitzone.com',
-        specializations: ['CrossFit', 'Nutrition'],
-        clients: 22,
-        maxClients: 25,
-        rating: 4.8,
-        experience: 7,
-        status: 'active'
-    },
-    {
-        id: '3',
-        name: 'Priya Sharma',
-        phone: '+91 76543 21098',
-        email: 'priya@fitzone.com',
-        specializations: ['Yoga', 'Pilates'],
-        clients: 15,
-        maxClients: 20,
-        rating: 5.0,
-        experience: 4,
-        status: 'active'
-    },
-    {
-        id: '4',
-        name: 'John Davis',
-        phone: '+91 65432 10987',
-        email: 'john@fitzone.com',
-        specializations: ['Boxing', 'Cardio'],
-        clients: 12,
-        maxClients: 20,
-        rating: 4.7,
-        experience: 6,
-        status: 'on_leave'
-    },
-    {
-        id: '5',
-        name: 'Ananya Reddy',
-        phone: '+91 54321 09876',
-        email: 'ananya@fitzone.com',
-        specializations: ['Zumba', 'Dance Fitness'],
-        clients: 25,
-        maxClients: 30,
-        rating: 4.9,
-        experience: 3,
-        status: 'active'
-    },
-]
+// Use TrainerUI from service
+type Trainer = TrainerUI
 
 const allSpecializations = ['All Specializations', 'Weight Training', 'HIIT', 'CrossFit', 'Nutrition', 'Yoga', 'Pilates', 'Boxing', 'Cardio', 'Zumba', 'Dance Fitness']
 const statuses = ['All Status', 'active', 'on_leave', 'inactive']
 
 export function TrainersPage() {
-    const [trainers, setTrainers] = useState<Trainer[]>(initialTrainers)
+    const { user, userData } = useAuth()
+    const [trainers, setTrainers] = useState<Trainer[]>([])
+    const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
     const [showFilterDropdown, setShowFilterDropdown] = useState(false)
     const [showAddModal, setShowAddModal] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     // Filter states
     const [selectedSpecialization, setSelectedSpecialization] = useState('All Specializations')
@@ -95,31 +28,52 @@ export function TrainersPage() {
 
     // New trainer form state
     const [newTrainer, setNewTrainer] = useState({
-        name: '',
+        full_name: '',
         phone: '',
         email: '',
         specializations: [] as string[],
-        maxClients: 20,
-        experience: 1
+        max_clients: 20,
+        experience_years: 1,
+        status: 'active'
     })
+
+    // Fetch trainers
+    useEffect(() => {
+        async function fetchTrainers() {
+            if (!user) return
+            try {
+                const gymId = userData?.gymId || user.id
+
+                if (gymId) {
+                    const data = await trainerService.getTrainers(gymId)
+                    setTrainers(data)
+                }
+            } catch (err) {
+                console.error('Error fetching trainers:', err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchTrainers()
+    }, [user, userData])
 
     // Computed stats
     const stats = useMemo(() => ({
         total: trainers.length,
         active: trainers.filter(t => t.status === 'active').length,
         onLeave: trainers.filter(t => t.status === 'on_leave').length,
-        avgRating: (trainers.reduce((sum, t) => sum + t.rating, 0) / trainers.length).toFixed(1)
+        avgRating: trainers.length ? (trainers.reduce((sum, t) => sum + t.rating, 0) / trainers.length).toFixed(1) : '0.0'
     }), [trainers])
 
     // Filter trainers based on search and filters
     const filteredTrainers = useMemo(() => {
         return trainers.filter(trainer => {
-            const matchesSearch = trainer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                trainer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                trainer.specializations.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))
+            const matchesSearch = trainer.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                trainer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (trainer.specializations && trainer.specializations.some(s => s.toLowerCase().includes(searchQuery.toLowerCase())))
 
             const matchesSpec = selectedSpecialization === 'All Specializations' ||
-                trainer.specializations.includes(selectedSpecialization)
+                (trainer.specializations && trainer.specializations.includes(selectedSpecialization))
             const matchesStatus = selectedStatus === 'All Status' || trainer.status === selectedStatus
 
             return matchesSearch && matchesSpec && matchesStatus
@@ -141,7 +95,7 @@ export function TrainersPage() {
         const csvContent = [
             headers.join(','),
             ...filteredTrainers.map(t =>
-                [t.name, t.phone, t.email, `"${t.specializations.join('; ')}"`, t.clients, t.maxClients, t.rating, t.experience, t.status].join(',')
+                [t.full_name, t.phone, t.email, `"${t.specializations?.join('; ')}"`, t.clients, t.max_clients, t.rating, t.experience_years, t.status].join(',')
             )
         ].join('\n')
 
@@ -154,18 +108,57 @@ export function TrainersPage() {
     }
 
     // Add new trainer
-    const handleAddTrainer = (e: React.FormEvent) => {
+    const handleAddTrainer = async (e: React.FormEvent) => {
         e.preventDefault()
-        const trainer: Trainer = {
-            id: String(Date.now()),
-            ...newTrainer,
-            clients: 0,
-            rating: 5.0,
-            status: 'active'
+        if (!user || !userData?.gymId) {
+            alert('Missing Gym ID. Please reload.')
+            return
         }
-        setTrainers([trainer, ...trainers])
-        setNewTrainer({ name: '', phone: '', email: '', specializations: [], maxClients: 20, experience: 1 })
-        setShowAddModal(false)
+
+        // Check subscription limits before adding trainer
+        const canAdd = await subscriptionService.canAddTrainer(userData.gymId)
+        if (!canAdd.allowed) {
+            alert(canAdd.reason || 'Cannot add trainer. Please upgrade your plan.')
+            return
+        }
+
+        setIsSubmitting(true)
+        try {
+            const newTrainerData = {
+                gym_id: userData.gymId,
+                ...newTrainer
+            }
+            const created = await trainerService.createTrainer(newTrainerData)
+
+            // Re-fetch or manually add to state (requires mapping back to UI)
+            // For simplicity, we just reload or re-fetch. 
+            // Better: Optimistic update or mapped add.
+            // Using a simple refresh for now or just wait for next fetch?
+            // Let's fake the TrainerUI object to add it immediately
+            const uiTrainer: Trainer = {
+                id: created.id,
+                full_name: newTrainer.full_name,
+                phone: newTrainer.phone,
+                email: newTrainer.email,
+                specializations: newTrainer.specializations,
+                clients: 0,
+                max_clients: newTrainer.max_clients,
+                rating: 5.0,
+                experience_years: newTrainer.experience_years,
+                status: newTrainer.status as any,
+                joined_date: new Date().toISOString().split('T')[0]
+            }
+
+            setTrainers([uiTrainer, ...trainers])
+
+            setNewTrainer({ full_name: '', phone: '', email: '', specializations: [], max_clients: 20, experience_years: 1, status: 'active' })
+            setShowAddModal(false)
+        } catch (err: any) {
+            console.error('Error adding trainer:', err)
+            alert(err.message)
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     const toggleSpecialization = (spec: string) => {
@@ -346,7 +339,9 @@ export function TrainersPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredTrainers.length === 0 ? (
+                        {loading ? (
+                            <tr><td colSpan={8} className={styles.emptyState}>Loading trainers...</td></tr>
+                        ) : filteredTrainers.length === 0 ? (
                             <tr>
                                 <td colSpan={8} className={styles.emptyState}>
                                     No trainers found matching your criteria
@@ -357,8 +352,8 @@ export function TrainersPage() {
                                 <tr key={trainer.id}>
                                     <td>
                                         <div className={styles.trainerCell}>
-                                            <div className={styles.avatar}>{trainer.name.charAt(0)}</div>
-                                            <span className={styles.trainerName}>{trainer.name}</span>
+                                            <div className={styles.avatar}>{trainer.full_name?.charAt(0)}</div>
+                                            <span className={styles.trainerName}>{trainer.full_name}</span>
                                         </div>
                                     </td>
                                     <td>
@@ -369,14 +364,14 @@ export function TrainersPage() {
                                     </td>
                                     <td>
                                         <div className={styles.tags}>
-                                            {trainer.specializations.map((spec) => (
+                                            {trainer.specializations?.map((spec) => (
                                                 <span key={spec} className={styles.tag}>{spec}</span>
                                             ))}
                                         </div>
                                     </td>
                                     <td>
-                                        <div className={`${styles.capacity} ${getCapacityClass(trainer.clients, trainer.maxClients)}`}>
-                                            {trainer.clients}/{trainer.maxClients}
+                                        <div className={`${styles.capacity} ${getCapacityClass(trainer.clients, trainer.max_clients)}`}>
+                                            {trainer.clients}/{trainer.max_clients}
                                         </div>
                                     </td>
                                     <td>
@@ -385,7 +380,7 @@ export function TrainersPage() {
                                             <span>{trainer.rating}</span>
                                         </div>
                                     </td>
-                                    <td>{trainer.experience} yrs</td>
+                                    <td>{trainer.experience_years} yrs</td>
                                     <td>
                                         <span className={`${styles.status} ${getStatusClass(trainer.status)}`}>
                                             {trainer.status.replace('_', ' ')}
@@ -418,8 +413,8 @@ export function TrainersPage() {
                                     type="text"
                                     id="name"
                                     required
-                                    value={newTrainer.name}
-                                    onChange={(e) => setNewTrainer({ ...newTrainer, name: e.target.value })}
+                                    value={newTrainer.full_name}
+                                    onChange={(e) => setNewTrainer({ ...newTrainer, full_name: e.target.value })}
                                     placeholder="Enter trainer name"
                                 />
                             </div>
@@ -468,8 +463,8 @@ export function TrainersPage() {
                                         id="maxClients"
                                         min={1}
                                         max={50}
-                                        value={newTrainer.maxClients}
-                                        onChange={(e) => setNewTrainer({ ...newTrainer, maxClients: Number(e.target.value) })}
+                                        value={newTrainer.max_clients}
+                                        onChange={(e) => setNewTrainer({ ...newTrainer, max_clients: Number(e.target.value) })}
                                     />
                                 </div>
                                 <div className={styles.formGroup}>
@@ -479,8 +474,8 @@ export function TrainersPage() {
                                         id="experience"
                                         min={0}
                                         max={30}
-                                        value={newTrainer.experience}
-                                        onChange={(e) => setNewTrainer({ ...newTrainer, experience: Number(e.target.value) })}
+                                        value={newTrainer.experience_years}
+                                        onChange={(e) => setNewTrainer({ ...newTrainer, experience_years: Number(e.target.value) })}
                                     />
                                 </div>
                             </div>
@@ -488,8 +483,8 @@ export function TrainersPage() {
                                 <Button type="button" variant="ghost" onClick={() => setShowAddModal(false)}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={newTrainer.specializations.length === 0}>
-                                    Add Trainer
+                                <Button type="submit" disabled={newTrainer.specializations.length === 0 || isSubmitting}>
+                                    {isSubmitting ? 'Adding...' : 'Add Trainer'}
                                 </Button>
                             </div>
                         </form>

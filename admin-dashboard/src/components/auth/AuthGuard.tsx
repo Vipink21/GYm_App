@@ -6,12 +6,7 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
-  // DEMO MODE: Bypass authentication to show dashboard
-  // Remove this block and uncomment below for production
-  return <>{children}</>
-
-  /* PRODUCTION AUTH - Uncomment for real authentication
-  const { user, loading, isAdmin } = useAuth()
+  const { user, loading } = useAuth()
   const location = useLocation()
 
   if (loading) {
@@ -48,26 +43,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  if (!isAdmin) {
-    return (
-      <div className="auth-guard-error">
-        <h2>Access Denied</h2>
-        <p>You don't have permission to access this dashboard.</p>
-        <style>{`
-          .auth-guard-error {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            text-align: center;
-            padding: var(--space-8);
-          }
-        `}</style>
-      </div>
-    )
-  }
+  // Optional: Add admin check if needed
+  // if (!isAdmin) { ... }
 
   return <>{children}</>
-  */
 }

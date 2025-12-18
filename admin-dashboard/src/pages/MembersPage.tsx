@@ -1,37 +1,29 @@
-import { useState, useMemo } from 'react'
-import { Plus, Search, Filter, Download, X, ChevronDown } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { Plus, Search, Filter, Download, X, ChevronDown, Edit, Trash2 } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import styles from './MembersPage.module.css'
+import { useAuth } from '../contexts/AuthContext'
+import { memberService, MemberUI } from '../services/memberService'
+import { subscriptionService } from '../services/subscriptionService'
+import { gymService } from '../services/gymService'
 
-interface Member {
-    id: string
-    name: string
-    phone: string
-    email: string
-    plan: string
-    status: 'active' | 'expiring' | 'expired'
-    trainer: string
-    joined: string
-}
-
-const initialMembers: Member[] = [
-    { id: '1', name: 'Rahul Sharma', phone: '+91 98765 43210', email: 'rahul@email.com', plan: 'Gold Annual', status: 'active', trainer: 'Sarah M.', joined: 'Jan 15, 2024' },
-    { id: '2', name: 'Priya Patel', phone: '+91 87654 32109', email: 'priya@email.com', plan: 'Silver Monthly', status: 'active', trainer: 'Mike T.', joined: 'Feb 20, 2024' },
-    { id: '3', name: 'Amit Kumar', phone: '+91 76543 21098', email: 'amit@email.com', plan: 'Gold Annual', status: 'expiring', trainer: 'Sarah M.', joined: 'Mar 10, 2024' },
-    { id: '4', name: 'Sneha Gupta', phone: '+91 65432 10987', email: 'sneha@email.com', plan: 'Platinum', status: 'active', trainer: 'John D.', joined: 'Apr 5, 2024' },
-    { id: '5', name: 'Vikram Singh', phone: '+91 54321 09876', email: 'vikram@email.com', plan: 'Gold Annual', status: 'expired', trainer: 'Sarah M.', joined: 'May 12, 2024' },
-]
+// Use MemberUI from service
+type Member = MemberUI
 
 const plans = ['All Plans', 'Gold Annual', 'Silver Monthly', 'Platinum', 'Bronze']
 const statuses = ['All Status', 'active', 'expiring', 'expired']
 const trainers = ['All Trainers', 'Sarah M.', 'Mike T.', 'John D.']
 
 export function MembersPage() {
-    const [members, setMembers] = useState<Member[]>(initialMembers)
+    const { user, userData, createGym } = useAuth()
+    const [members, setMembers] = useState<Member[]>([])
+    const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
     const [showFilterDropdown, setShowFilterDropdown] = useState(false)
     const [showAddModal, setShowAddModal] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
 
     // Filter states
     const [selectedPlan, setSelectedPlan] = useState('All Plans')
@@ -40,23 +32,46 @@ export function MembersPage() {
 
     // New member form state
     const [newMember, setNewMember] = useState({
-        name: '',
+        full_name: '',
         phone: '',
         email: '',
         plan: 'Gold Annual',
-        trainer: 'Sarah M.'
+        trainer_name: 'Sarah M.',
+        status: 'active'
     })
+
+    // Fetch members on mount
+    useEffect(() => {
+        async function fetchMembers() {
+            if (!user) return
+
+
+
+            try {
+                // Use the gym ID associated with the user, or fallback to user ID (though gymId is preferred)
+                const gymId = userData?.gymId || user.id
+                const data = await memberService.getMembers(gymId)
+                setMembers(data)
+            } catch (error) {
+                console.error('Error fetching members:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchMembers()
+    }, [user])
 
     // Filter members based on search and filters
     const filteredMembers = useMemo(() => {
         return members.filter(member => {
-            const matchesSearch = member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                member.phone.includes(searchQuery)
+            const matchesSearch = member.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                member.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                member.phone?.includes(searchQuery)
 
             const matchesPlan = selectedPlan === 'All Plans' || member.plan === selectedPlan
             const matchesStatus = selectedStatus === 'All Status' || member.status === selectedStatus
-            const matchesTrainer = selectedTrainer === 'All Trainers' || member.trainer === selectedTrainer
+            const matchesTrainer = selectedTrainer === 'All Trainers' || member.trainer_name === selectedTrainer
 
             return matchesSearch && matchesPlan && matchesStatus && matchesTrainer
         })
@@ -78,7 +93,7 @@ export function MembersPage() {
         const csvContent = [
             headers.join(','),
             ...filteredMembers.map(m =>
-                [m.name, m.phone, m.email, m.plan, m.status, m.trainer, m.joined].join(',')
+                [m.full_name, m.phone, m.email, m.plan, m.status, m.trainer_name, m.joined_date].join(',')
             )
         ].join('\n')
 
@@ -90,17 +105,121 @@ export function MembersPage() {
         URL.revokeObjectURL(link.href)
     }
 
-    // Add new member
-    const handleAddMember = (e: React.FormEvent) => {
+    const handleAddMember = async (e: React.FormEvent) => {
         e.preventDefault()
-        const member: Member = {
-            id: String(Date.now()),
-            ...newMember,
-            status: 'active',
-            joined: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        if (!user) return
+
+        setIsSubmitting(true)
+        try {
+            if (editingMemberId) {
+                await memberService.updateMember(editingMemberId, newMember)
+                // Optimistic update
+                setMembers(members.map(m =>
+                    m.id === editingMemberId
+                        ? { ...m, ...newMember, full_name: newMember.full_name, status: newMember.status as any }
+                        : m
+                ))
+            } else {
+                let gymId = userData?.gymId
+
+                if (!gymId) {
+                    // Check if user already has a gym that just isn't linked in local state
+                    try {
+                        const existingGyms = await gymService.getGyms()
+                        if (existingGyms && existingGyms.length > 0) {
+                            gymId = existingGyms[0].id
+                            console.log('Found existing gym, using that:', gymId)
+                        }
+                    } catch (err) {
+                        console.warn('Error checking for existing gyms:', err)
+                    }
+
+                    if (!gymId) {
+                        // Try to auto-create gym
+                        const newGymId = await createGym('My Gym')
+                        if (newGymId) {
+                            gymId = newGymId
+                            alert('A new Gym Profile has been created for you.')
+                        } else {
+                            console.error('No Gym ID found and failed to create one')
+                            throw new Error('User is not associated with a Gym. Please contact support.')
+                        }
+                    }
+                }
+
+                // Check subscription limits before adding member
+                let canAdd = await subscriptionService.canAddMember(gymId)
+
+                // Self-healing: If no active subscription, try to create one and re-check
+                if (!canAdd.allowed && canAdd.reason === 'No active subscription found') {
+                    console.log('No subscription found, attempting to activate Free plan...')
+                    const activated = await subscriptionService.activateFreePlan(gymId)
+                    if (activated) {
+                        canAdd = await subscriptionService.canAddMember(gymId)
+                    }
+                }
+
+                if (!canAdd.allowed) {
+                    alert(canAdd.reason || 'Cannot add member. Please upgrade your plan.')
+                    setIsSubmitting(false)
+                    return
+                }
+
+                const newMemberData = {
+                    gym_id: gymId,
+                    ...newMember
+                }
+                const createdUser = await memberService.createMember(newMemberData)
+
+                const uiMember: Member = {
+                    id: createdUser.id,
+                    full_name: newMember.full_name,
+                    phone: newMember.phone,
+                    email: newMember.email,
+                    plan: newMember.plan,
+                    status: newMember.status as any,
+                    trainer_name: newMember.trainer_name,
+                    joined_date: new Date().toISOString().split('T')[0]
+                }
+                setMembers([uiMember, ...members])
+            }
+
+            resetForm()
+        } catch (error: any) {
+            console.error('Error saving member:', error)
+            alert(error.message)
+        } finally {
+            setIsSubmitting(false)
         }
-        setMembers([member, ...members])
-        setNewMember({ name: '', phone: '', email: '', plan: 'Gold Annual', trainer: 'Sarah M.' })
+    }
+
+    const handleDeleteMember = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this member?')) return
+        try {
+            await memberService.deleteMember(id)
+            setMembers(members.filter(m => m.id !== id))
+        } catch (error) {
+            console.error('Error deleting member:', error)
+            alert('Failed to delete member')
+        }
+    }
+
+    const startEditMember = (member: Member) => {
+        setNewMember({
+            full_name: member.full_name,
+            phone: member.phone,
+            email: member.email,
+            plan: member.plan,
+            trainer_name: member.trainer_name,
+            status: member.status
+        })
+        setEditingMemberId(member.id)
+        setShowAddModal(true)
+    }
+
+    const resetForm = () => {
+        setNewMember({ full_name: '', phone: '', email: '', plan: 'Gold Annual', trainer_name: 'Sarah M.', status: 'active' })
+        setEditingMemberId(null)
         setShowAddModal(false)
     }
 
@@ -213,7 +332,10 @@ export function MembersPage() {
                     <Button variant="ghost" size="sm" onClick={handleExport}>
                         <Download size={16} /> Export
                     </Button>
-                    <Button size="sm" onClick={() => setShowAddModal(true)}>
+                    <Button size="sm" onClick={() => {
+                        resetForm()
+                        setShowAddModal(true)
+                    }}>
                         <Plus size={16} /> Add Member
                     </Button>
                 </div>
@@ -263,7 +385,9 @@ export function MembersPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredMembers.length === 0 ? (
+                        {loading ? (
+                            <tr><td colSpan={7} className={styles.emptyState}>Loading members...</td></tr>
+                        ) : filteredMembers.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className={styles.emptyState}>
                                     No members found matching your criteria
@@ -274,8 +398,8 @@ export function MembersPage() {
                                 <tr key={member.id}>
                                     <td>
                                         <div className={styles.memberCell}>
-                                            <div className={styles.avatar}>{member.name.charAt(0)}</div>
-                                            <span className={styles.memberName}>{member.name}</span>
+                                            <div className={styles.avatar}>{member.full_name?.charAt(0)}</div>
+                                            <span className={styles.memberName}>{member.full_name}</span>
                                         </div>
                                     </td>
                                     <td>
@@ -290,10 +414,25 @@ export function MembersPage() {
                                             {member.status}
                                         </span>
                                     </td>
-                                    <td>{member.trainer}</td>
-                                    <td>{member.joined}</td>
+                                    <td>{member.trainer_name}</td>
+                                    <td>{member.joined_date}</td>
                                     <td>
-                                        <button className={styles.moreBtn}>•••</button>
+                                        <div className={styles.actionButtons}>
+                                            <button
+                                                className={styles.iconBtn}
+                                                onClick={() => startEditMember(member)}
+                                                title="Edit"
+                                            >
+                                                <Edit size={16} />
+                                            </button>
+                                            <button
+                                                className={`${styles.iconBtn} ${styles.deleteBtn}`}
+                                                onClick={() => handleDeleteMember(member.id)}
+                                                title="Delete"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))
@@ -307,8 +446,8 @@ export function MembersPage() {
                 <div className={styles.modalOverlay} onClick={() => setShowAddModal(false)}>
                     <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
                         <div className={styles.modalHeader}>
-                            <h2>Add New Member</h2>
-                            <button className={styles.closeModal} onClick={() => setShowAddModal(false)}>
+                            <h2>{editingMemberId ? 'Edit Member' : 'Add New Member'}</h2>
+                            <button className={styles.closeModal} onClick={resetForm}>
                                 <X size={20} />
                             </button>
                         </div>
@@ -319,8 +458,8 @@ export function MembersPage() {
                                     type="text"
                                     id="name"
                                     required
-                                    value={newMember.name}
-                                    onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                                    value={newMember.full_name}
+                                    onChange={(e) => setNewMember({ ...newMember, full_name: e.target.value })}
                                     placeholder="Enter member name"
                                 />
                             </div>
@@ -363,8 +502,8 @@ export function MembersPage() {
                                     <label htmlFor="trainer">Assigned Trainer</label>
                                     <select
                                         id="trainer"
-                                        value={newMember.trainer}
-                                        onChange={(e) => setNewMember({ ...newMember, trainer: e.target.value })}
+                                        value={newMember.trainer_name}
+                                        onChange={(e) => setNewMember({ ...newMember, trainer_name: e.target.value })}
                                     >
                                         {trainers.filter(t => t !== 'All Trainers').map(trainer => (
                                             <option key={trainer} value={trainer}>{trainer}</option>
@@ -373,11 +512,11 @@ export function MembersPage() {
                                 </div>
                             </div>
                             <div className={styles.modalActions}>
-                                <Button type="button" variant="ghost" onClick={() => setShowAddModal(false)}>
+                                <Button type="button" variant="ghost" onClick={resetForm}>
                                     Cancel
                                 </Button>
-                                <Button type="submit">
-                                    Add Member
+                                <Button type="submit" disabled={isSubmitting}>
+                                    {isSubmitting ? 'Saving...' : (editingMemberId ? 'Update Member' : 'Add Member')}
                                 </Button>
                             </div>
                         </form>

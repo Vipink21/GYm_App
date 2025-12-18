@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { Dumbbell, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
 import styles from './LoginPage.module.css'
 
 export function LoginPage() {
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
+    const [email, setEmail] = useState('admin@fitzone.com')
+    const [password, setPassword] = useState('password123')
     const [showPassword, setShowPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState('')
@@ -96,7 +96,7 @@ export function LoginPage() {
                 </form>
 
                 <p className={styles.footer}>
-                    Forgot your password? <a href="#">Reset it here</a>
+                    Don't have an account? <Link to="/register">Sign up</Link>
                 </p>
             </div>
         </div>
