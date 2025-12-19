@@ -16,8 +16,12 @@ import { useAuth } from '../../contexts/AuthContext'
 import styles from './Sidebar.module.css'
 
 export function Sidebar() {
-    const { userData, isSuperAdmin, signOut } = useAuth()
+    const { userData, isSuperAdmin: authIsSuperAdmin, signOut } = useAuth()
     const location = useLocation()
+
+    // Check if we are in the admin dashboard area or if the user is a super admin
+    const isAdminPath = location.pathname.startsWith('/admin')
+    const isSuperAdmin = authIsSuperAdmin || userData?.role === 'super_admin' || isAdminPath
 
     const gymOwnerNav = [
         { name: 'Dashboard', path: '/', icon: Home },
@@ -36,8 +40,7 @@ export function Sidebar() {
     const superAdminNav = [
         { name: 'Dashboard', path: '/admin', icon: Home },
         { name: 'Gym Owners', path: '/admin/gyms', icon: Building2 },
-        { name: 'SaaS Plans', path: '/admin/plans', icon: Crown },
-        { name: 'Subscriptions', path: '/admin/subscriptions', icon: CreditCard },
+        { name: 'Gym Owner Plan Data', path: '/admin/plans', icon: Crown },
     ]
 
     const navigation = isSuperAdmin ? superAdminNav : gymOwnerNav
@@ -80,13 +83,13 @@ export function Sidebar() {
             <div className={styles.footer}>
                 <div className={styles.userInfo}>
                     <div className={styles.avatar}>
-                        {userData?.profile?.firstName?.charAt(0) || 'A'}
+                        {userData?.profile?.firstName?.charAt(0) || userData?.profile?.email?.charAt(0).toUpperCase() || 'A'}
                     </div>
                     <div className={styles.userDetails}>
                         <span className={styles.userName}>
-                            {userData?.profile?.firstName} {userData?.profile?.lastName}
+                            {userData?.profile?.firstName ? `${userData?.profile?.firstName} ${userData?.profile?.lastName}` : userData?.profile?.email?.split('@')[0]}
                         </span>
-                        <span className={styles.userRole}>{userData?.role}</span>
+                        <span className={styles.userRole}>{userData?.role?.replace('_', ' ')}</span>
                     </div>
                 </div>
                 <button className={styles.logoutBtn} onClick={signOut}>

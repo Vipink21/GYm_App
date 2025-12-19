@@ -89,10 +89,20 @@ export function RegisterPage() {
         setError('')
 
         try {
+            const email = formData.email.trim()
+            const password = formData.password.trim()
+
+            // Basic Client-side Validation
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                setError('Please enter a valid email address.')
+                setIsLoading(false)
+                return
+            }
+
             // 1. Sign Up (Auth)
             const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: formData.email,
-                password: formData.password,
+                email,
+                password,
                 options: {
                     data: {
                         display_name: formData.full_name,
@@ -130,7 +140,7 @@ export function RegisterPage() {
                 _price: selectedPlan.price_monthly,
                 _currency: 'INR',
                 _plan_details: selectedPlan,
-                _email: formData.email,
+                _email: email,
                 _phone: formData.owner_phone,
                 _address: formData.owner_address,
                 _owner_city: formData.owner_city
