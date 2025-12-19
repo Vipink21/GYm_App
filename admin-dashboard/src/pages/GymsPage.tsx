@@ -7,6 +7,7 @@ import { gymService, GymUI } from '../services/gymService'
 import { useAuth } from '../contexts/AuthContext'
 import { subscriptionService } from '../services/subscriptionService'
 import styles from './MembersPage.module.css' // Reusing styles for now
+import { showError, showConfirm } from '../utils/swal'
 
 export function GymsPage() {
     const { user, isSuperAdmin } = useAuth()
@@ -57,7 +58,7 @@ export function GymsPage() {
                 // Check subscription limits before adding gym
                 const canAdd = await subscriptionService.canAddGym(user.id)
                 if (!canAdd.allowed) {
-                    alert(canAdd.reason || 'Cannot add gym location. Please upgrade your plan.')
+                    showError('Limit Reached', canAdd.reason || 'Cannot add gym location. Please upgrade your plan.')
                     return
                 }
 
@@ -73,16 +74,20 @@ export function GymsPage() {
             setShowModal(false)
             fetchGyms()
         } catch (error: any) {
-            alert(error.message)
+            showError('Error', error.message)
         }
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Delete this gym?')) return
+        const result = await showConfirm('Delete Gym', 'Are you sure you want to delete this gym?')
+        if (!result.isConfirmed) return
+
         try {
             await gymService.deleteGym(id)
             fetchGyms()
-        } catch (e) { console.error(e) }
+        } catch (e: any) {
+            showError('Error', e.message || 'Failed to delete gym')
+        }
     }
 
     const filteredGyms = gyms.filter(g =>

@@ -6,6 +6,7 @@ import { Modal } from '../components/ui/Modal'
 import { planManagementService, Plan } from '../services/planManagementService'
 import { useAuth } from '../contexts/AuthContext'
 import styles from './MembersPage.module.css'
+import { showError, showConfirm, showSuccess } from '../utils/swal'
 
 export function PlanManagementPage() {
     const { isSuperAdmin } = useAuth()
@@ -50,9 +51,10 @@ export function PlanManagementPage() {
                 await planManagementService.createPlan(formData as any)
             }
             setShowModal(false)
+            showSuccess('Plan Saved', editingPlan ? 'Plan has been updated successfully.' : 'New plan has been created successfully.')
             fetchPlans()
         } catch (error: any) {
-            alert(error.message)
+            showError('Error', error.message)
         }
     }
 
@@ -66,17 +68,21 @@ export function PlanManagementPage() {
     }
 
     const handleDelete = async (planId: string) => {
-        if (!window.confirm('Are you sure you want to delete this plan? This action cannot be undone.')) {
-            return
-        }
+        const result = await showConfirm(
+            'Delete Plan',
+            'Are you sure you want to delete this plan? This action cannot be undone.'
+        )
+        if (!result.isConfirmed) return
+
         try {
             await planManagementService.deletePlan(planId)
+            showSuccess('Deleted', 'Plan has been deleted successfully.')
             fetchPlans()
         } catch (error: any) {
             if (error?.code === '23503') {
-                alert('Cannot delete plan: It has active subscriptions. Deactivate it instead.')
+                showError('Cannot Delete', 'This plan has active subscriptions. Deactivate it instead to prevent new signups.')
             } else {
-                alert('Failed to delete plan: ' + error.message)
+                showError('Error', 'Failed to delete plan: ' + error.message)
             }
         }
     }

@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { memberService, MemberUI } from '../services/memberService'
 import { subscriptionService } from '../services/subscriptionService'
 import { gymService } from '../services/gymService'
+import { showError, showConfirm, showSuccess } from '../utils/swal'
 
 // Use MemberUI from service
 type Member = MemberUI
@@ -139,7 +140,7 @@ export function MembersPage() {
                         const newGymId = await createGym('My Gym')
                         if (newGymId) {
                             gymId = newGymId
-                            alert('A new Gym Profile has been created for you.')
+                            showSuccess('Gym Created', 'A new Gym Profile has been created for you.')
                         } else {
                             console.error('No Gym ID found and failed to create one')
                             throw new Error('User is not associated with a Gym. Please contact support.')
@@ -160,7 +161,7 @@ export function MembersPage() {
                 }
 
                 if (!canAdd.allowed) {
-                    alert(canAdd.reason || 'Cannot add member. Please upgrade your plan.')
+                    showError('Limit Reached', canAdd.reason || 'Cannot add member. Please upgrade your plan.')
                     setIsSubmitting(false)
                     return
                 }
@@ -187,20 +188,22 @@ export function MembersPage() {
             resetForm()
         } catch (error: any) {
             console.error('Error saving member:', error)
-            alert(error.message)
+            showError('Error', error.message)
         } finally {
             setIsSubmitting(false)
         }
     }
 
     const handleDeleteMember = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this member?')) return
+        const result = await showConfirm('Delete Member', 'Are you sure you want to delete this member?')
+        if (!result.isConfirmed) return
         try {
             await memberService.deleteMember(id)
             setMembers(members.filter(m => m.id !== id))
-        } catch (error) {
+            showSuccess('Deleted', 'Member has been deleted successfully.')
+        } catch (error: any) {
             console.error('Error deleting member:', error)
-            alert('Failed to delete member')
+            showError('Error', error.message || 'Failed to delete member')
         }
     }
 

@@ -217,8 +217,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Default to admin during dev if no user data found (or based on mock)
     // In real app, check `userData?.role`
-    const isAdmin = userData?.role === 'admin' || userData?.role === 'superadmin' || userData?.role === 'gym_owner' || user?.id === 'mock-admin-id'
-    const isSuperAdmin = userData?.role === 'superadmin' || user?.id === 'mock-admin-id'
+    const isSuperAdmin = userData?.role === 'superadmin' || userData?.role === 'super_admin' || user?.id === 'mock-admin-id'
+    const isAdmin = userData?.role === 'admin' || isSuperAdmin || userData?.role === 'gym_owner' || user?.id === 'mock-admin-id'
 
     const refreshUser = async () => {
         if (user) {

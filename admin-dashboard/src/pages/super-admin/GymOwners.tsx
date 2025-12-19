@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { adminService, GymDetails } from '../../services/adminService'
-import { Search, Trash2, Building2, MapPin, User, Mail, Phone, ExternalLink } from 'lucide-react'
+import { Search, Trash2, Building2, MapPin, User, Mail, Phone } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
-import { Button } from '../../components/ui/Button'
+import { showError, showConfirm, showSuccess } from '../../utils/swal'
 
 export function GymOwnersPage() {
     const [gyms, setGyms] = useState<GymDetails[]>([])
@@ -26,14 +26,18 @@ export function GymOwnersPage() {
     }
 
     const handleDelete = async (gymId: string, gymName: string) => {
-        if (!window.confirm(`Are you sure you want to delete "${gymName}"? All data (members, subscriptions) will be lost.`)) {
-            return
-        }
+        const result = await showConfirm(
+            'Delete Gym',
+            `Are you sure you want to delete "${gymName}"? All data (members, subscriptions) will be lost.`
+        )
+        if (!result.isConfirmed) return
+
         try {
             await adminService.deleteGym(gymId)
+            showSuccess('Deleted', 'Gym has been deleted successfully.')
             loadGyms()
         } catch (error: any) {
-            alert('Failed to delete gym: ' + error.message)
+            showError('Error', 'Failed to delete gym: ' + error.message)
         }
     }
 
@@ -75,7 +79,7 @@ export function GymOwnersPage() {
                 </div>
             </div>
 
-            <Card padding="none">
+            <Card padding="sm">
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                         <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>

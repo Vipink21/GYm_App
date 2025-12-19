@@ -6,6 +6,7 @@ import { Card } from '../components/ui/Card'
 import styles from './ClassesPage.module.css'
 import { useAuth } from '../contexts/AuthContext'
 import { classService } from '../services/classService'
+import { showError, showSuccess } from '../utils/swal'
 
 interface GymClass {
     id: string
@@ -209,10 +210,11 @@ export function ClassesPage() {
 
             const newAll = [...allClasses, uiClass]
             setSchedule(groupClasses(newAll))
+            showSuccess('Class Added', 'New class has been added to the schedule.')
             setShowAddModal(false)
         } catch (err: any) {
             console.error('Error adding class:', err)
-            alert(err.message)
+            showError('Error', err.message || 'Failed to add class')
         } finally {
             setIsSubmitting(false)
         }

@@ -25,7 +25,15 @@ export function LoginPage() {
 
         try {
             await signIn(email, password)
-            navigate(from, { replace: true })
+            // The AuthContext will update, we need to check the role
+            // Since signIn is async and sets state, we can't immediately check 'userData' here 
+            // but we can trust the AuthGuard/App logic or handle it in a useEffect.
+            // For now, let's keep the redirect simple but check if it's the default admin
+            if (email === 'admin@fitzone.com') {
+                navigate('/admin', { replace: true })
+            } else {
+                navigate(from, { replace: true })
+            }
         } catch (err: any) {
             setError(err.message || 'Failed to sign in')
         } finally {

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Dumbbell, Mail, Lock, Eye, EyeOff, User, MapPin, Phone, Building2, Check, ArrowLeft, ArrowRight, Home } from 'lucide-react'
+import { Dumbbell, Mail, Lock, Eye, EyeOff, User, MapPin, Phone, Building2, Check, ArrowRight, Home } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { Button } from '../components/ui/Button'
 import styles from './LoginPage.module.css'
+import { showSuccess } from '../utils/swal'
 
 interface Plan {
     id: string
@@ -153,7 +154,7 @@ export function RegisterPage() {
             await supabase.from('users').update({ gym_id: createdGymId }).eq('id', userId)
 
             // Success
-            alert('Registration Successful! Welcome to FitZone.')
+            await showSuccess('Registration Successful!', 'Welcome to FitZone. Please sign in to continue.')
             navigate('/login')
 
         } catch (err: any) {

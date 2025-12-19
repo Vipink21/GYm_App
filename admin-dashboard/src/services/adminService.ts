@@ -29,7 +29,7 @@ export const adminService = {
             .from('gyms')
             .select(`
                 *,
-                owner:users!gyms_owner_user_id_fkey (
+                owner:users!owner_user_id (
                     display_name,
                     email,
                     phone

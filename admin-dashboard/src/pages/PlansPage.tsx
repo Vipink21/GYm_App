@@ -5,6 +5,8 @@ import { Button } from '../components/ui/Button'
 import styles from './PlansPage.module.css'
 import { useAuth } from '../contexts/AuthContext'
 import { subscriptionService, Plan, Subscription } from '../services/subscriptionService'
+import { showError, showSuccess } from '../utils/swal'
+import Swal from 'sweetalert2'
 
 export function PlansPage() {
     const { userData } = useAuth()
@@ -48,7 +50,12 @@ export function PlansPage() {
 
     const handleUpgrade = () => {
         // TODO: Implement payment flow
-        alert('Payment integration coming soon! This will redirect to Razorpay checkout.')
+        Swal.fire({
+            title: 'Coming Soon',
+            text: 'Payment integration via Razorpay is coming soon! You will be able to subscribe to this plan directly.',
+            icon: 'info',
+            confirmButtonColor: '#D4AF37'
+        })
     }
 
     const getPlanIcon = (planName: string) => {
@@ -117,7 +124,7 @@ export function PlansPage() {
             const validFeatures = newPlan.features.filter(f => f.trim() !== '')
 
             // Insert into Supabase
-            const { data, error } = await subscriptionService.getPlans() // We'll use supabase directly
+            await subscriptionService.getPlans() // Just a sanity check or refresh
 
             // Use supabase client directly for insert
             const { supabase } = await import('../lib/supabase')
@@ -154,10 +161,10 @@ export function PlansPage() {
                 is_active: true
             })
             setShowAddModal(false)
-            alert('Plan created successfully!')
+            showSuccess('Plan Created', 'New subscription plan has been created successfully!')
         } catch (error: any) {
             console.error('Error creating plan:', error)
-            alert('Failed to create plan: ' + error.message)
+            showError('Error', 'Failed to create plan: ' + error.message)
         } finally {
             setIsSubmitting(false)
         }
@@ -200,7 +207,7 @@ export function PlansPage() {
 
 
             {/* Add New Plan Button (Gym Owners & Super Admin) */}
-            {(userData?.role === 'owner' || userData?.role === 'superadmin') && (
+            {(userData?.role === 'gym_owner' || userData?.role === 'superadmin' || userData?.role === 'super_admin') && (
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                     <Button
                         onClick={() => setShowAddModal(true)}

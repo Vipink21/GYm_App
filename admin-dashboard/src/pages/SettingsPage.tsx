@@ -5,6 +5,7 @@ import { Card } from '../components/ui/Card'
 import styles from './SettingsPage.module.css'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { showError, showSuccess } from '../utils/swal'
 
 export function SettingsPage() {
     const { user } = useAuth()
@@ -111,11 +112,12 @@ export function SettingsPage() {
                 if (updateError) throw updateError
             }
 
+            await showSuccess('Settings Saved', 'Your changes have been saved successfully.')
             setSaved(true)
             setTimeout(() => setSaved(false), 3000)
         } catch (err: any) {
             console.error('Error saving settings:', err)
-            alert('Failed to save settings: ' + err.message)
+            showError('Error', err.message || 'Failed to save settings')
         } finally {
             setIsSaving(false)
         }

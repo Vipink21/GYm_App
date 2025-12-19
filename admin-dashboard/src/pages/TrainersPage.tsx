@@ -6,6 +6,7 @@ import styles from './TrainersPage.module.css'
 import { useAuth } from '../contexts/AuthContext'
 import { trainerService, TrainerUI } from '../services/trainerService'
 import { subscriptionService } from '../services/subscriptionService'
+import { showError, showSuccess } from '../utils/swal'
 
 // Use TrainerUI from service
 type Trainer = TrainerUI
@@ -111,14 +112,14 @@ export function TrainersPage() {
     const handleAddTrainer = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!user || !userData?.gymId) {
-            alert('Missing Gym ID. Please reload.')
+            showError('Missing Data', 'Missing Gym ID. Please reload the page.')
             return
         }
 
         // Check subscription limits before adding trainer
         const canAdd = await subscriptionService.canAddTrainer(userData.gymId)
         if (!canAdd.allowed) {
-            alert(canAdd.reason || 'Cannot add trainer. Please upgrade your plan.')
+            showError('Limit Reached', canAdd.reason || 'Cannot add trainer. Please upgrade your plan.')
             return
         }
 
@@ -150,12 +151,13 @@ export function TrainersPage() {
             }
 
             setTrainers([uiTrainer, ...trainers])
+            showSuccess('Trainer Added', 'New trainer has been added successfully.')
 
             setNewTrainer({ full_name: '', phone: '', email: '', specializations: [], max_clients: 20, experience_years: 1, status: 'active' })
             setShowAddModal(false)
         } catch (err: any) {
             console.error('Error adding trainer:', err)
-            alert(err.message)
+            showError('Error', err.message || 'Failed to add trainer')
         } finally {
             setIsSubmitting(false)
         }
