@@ -150,7 +150,7 @@ export function GymOwnersPage() {
                                                         background: '#fef3c7',
                                                         color: '#b45309'
                                                     }}>
-                                                        {activeSub.plan?.name}
+                                                        {activeSub.plan?.name || 'Free'}
                                                     </span>
                                                 ) : (
                                                     <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>No Plan</span>

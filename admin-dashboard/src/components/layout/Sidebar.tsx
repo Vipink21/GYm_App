@@ -16,12 +16,11 @@ import { useAuth } from '../../contexts/AuthContext'
 import styles from './Sidebar.module.css'
 
 export function Sidebar() {
-    const { userData, isSuperAdmin: authIsSuperAdmin, signOut } = useAuth()
+    const { userData, signOut } = useAuth()
     const location = useLocation()
 
-    // Check if we are in the admin dashboard area or if the user is a super admin
-    const isAdminPath = location.pathname.startsWith('/admin')
-    const isSuperAdmin = authIsSuperAdmin || userData?.role === 'super_admin' || isAdminPath
+    // Check if the user is a super admin based on their role
+    const isSuperAdmin = userData?.role === 'superadmin' || userData?.role === 'super_admin'
 
     const gymOwnerNav = [
         { name: 'Dashboard', path: '/', icon: Home },

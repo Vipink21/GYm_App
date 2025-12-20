@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useLocation, Link } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Dumbbell, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from '../components/ui/Button'
@@ -14,9 +14,7 @@ export function LoginPage() {
 
     const { signIn } = useAuth()
     const navigate = useNavigate()
-    const location = useLocation()
 
-    const from = (location.state as any)?.from?.pathname || '/'
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -29,11 +27,7 @@ export function LoginPage() {
             // Since signIn is async and sets state, we can't immediately check 'userData' here 
             // but we can trust the AuthGuard/App logic or handle it in a useEffect.
             // For now, let's keep the redirect simple but check if it's the default admin
-            if (email === 'admin@fitzone.com') {
-                navigate('/admin', { replace: true })
-            } else {
-                navigate(from, { replace: true })
-            }
+            navigate('/', { replace: true })
         } catch (err: any) {
             setError(err.message || 'Failed to sign in')
         } finally {

@@ -43,8 +43,14 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // Optional: Add admin check if needed
-  // if (!isAdmin) { ... }
+  // Handle protected admin routes
+  if (location.pathname.startsWith('/admin')) {
+    const isSuperAdmin = user.email === 'admin@fitzone.com' || (user as any).role === 'superadmin' || (user as any).role === 'super_admin';
+    if (!isSuperAdmin) {
+      console.warn('Unauthorized access to admin route:', location.pathname);
+      return <Navigate to="/" replace />;
+    }
+  }
 
   return <>{children}</>
 }

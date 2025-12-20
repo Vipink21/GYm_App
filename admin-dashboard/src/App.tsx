@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider } from './contexts/AuthContext'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { AuthGuard } from './components/auth/AuthGuard'
 import { MainLayout } from './components/layout/MainLayout'
 import { LoginPage } from './pages/LoginPage'
@@ -20,6 +20,18 @@ import { SubscriptionsPage } from './pages/super-admin/Subscriptions'
 
 import { inspectUserTable } from './debug/inspect_users'
 
+// Role-based redirection component
+function HomeRedirect() {
+    const { isSuperAdmin, loading } = useAuth()
+
+    if (loading) return null; // Let AuthGuard handle loading
+
+    if (isSuperAdmin) {
+        return <Navigate to="/admin" replace />
+    }
+    return <DashboardPage />
+}
+
 function App() {
     if (process.env.NODE_ENV === 'development') {
         inspectUserTable()
@@ -30,11 +42,9 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
 
-
-
                 <Route element={<AuthGuard><MainLayout /></AuthGuard>}>
                     {/* Common / Gym Owner Routes */}
-                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/" element={<HomeRedirect />} />
                     <Route path="/members" element={<MembersPage />} />
                     <Route path="/trainers" element={<TrainersPage />} />
                     <Route path="/classes" element={<ClassesPage />} />
