@@ -17,6 +17,7 @@ import { PlanManagementPage } from './pages/PlanManagementPage'
 import { SuperAdminDashboard } from './pages/super-admin/Dashboard'
 import { GymOwnersPage } from './pages/super-admin/GymOwners'
 import { SubscriptionsPage } from './pages/super-admin/Subscriptions'
+import { SuperAdminSettings } from './pages/super-admin/Settings'
 
 import { inspectUserTable } from './debug/inspect_users'
 
@@ -59,6 +60,7 @@ function App() {
                     <Route path="/admin/gyms" element={<GymOwnersPage />} />
                     <Route path="/admin/plans" element={<PlanManagementPage />} />
                     <Route path="/admin/subscriptions" element={<SubscriptionsPage />} />
+                    <Route path="/admin/settings" element={<SuperAdminSettings />} />
                 </Route>
 
                 <Route path="*" element={<Navigate to="/" replace />} />

@@ -40,6 +40,7 @@ export function Sidebar() {
         { name: 'Dashboard', path: '/admin', icon: Home },
         { name: 'Gym Owners', path: '/admin/gyms', icon: Building2 },
         { name: 'Gym Owner Plan Data', path: '/admin/plans', icon: Crown },
+        { name: 'Settings', path: '/admin/settings', icon: Settings },
     ]
 
     const navigation = isSuperAdmin ? superAdminNav : gymOwnerNav

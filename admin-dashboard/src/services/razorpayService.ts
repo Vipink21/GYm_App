@@ -1,4 +1,5 @@
 import { Plan } from './subscriptionService'
+import { settingsService } from './settingsService'
 
 interface RazorpayResponse {
     razorpay_payment_id: string
@@ -33,6 +34,16 @@ declare global {
 }
 
 export const razorpayService = {
+    async fetchKey() {
+        try {
+            const dbKey = await settingsService.getRazorpayKey();
+            if (dbKey) return dbKey;
+        } catch (e) {
+            console.warn('Failed to fetch Razorpay key from DB, falling back to env');
+        }
+        return import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_placeholder';
+    },
+
     async createOrder(plan: Plan, billingCycle: 'monthly' | 'yearly') {
         // In a production app, this would be a call to your backend
         // Your backend would use the Razorpay Node.js SDK to create an order
@@ -52,8 +63,10 @@ export const razorpayService = {
         userData: { name: string, email: string, phone: string },
         onSuccess: (response: RazorpayResponse) => void
     ) {
+        const key = await this.fetchKey();
+
         const options: RazorpayOptions = {
-            key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_placeholder',
+            key,
             amount: order.amount,
             currency: order.currency,
             name: 'FitZone Gym Management',
