@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Plus, Search, Filter, Download, X, ChevronDown, Edit, Trash2 } from 'lucide-react'
+import { Plus, Search, Filter, Download, X, ChevronDown, Edit, Trash2, User, Phone, Mail, CreditCard, Dumbbell } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import styles from './MembersPage.module.css'
 import { useAuth } from '../contexts/AuthContext'
+import { Navigate } from 'react-router-dom'
 import { memberService, MemberUI } from '../services/memberService'
 import { subscriptionService } from '../services/subscriptionService'
 import { gymService } from '../services/gymService'
@@ -26,6 +27,14 @@ export function MembersPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
 
+    const userRole = userData?.role || 'member'
+    const isTrainer = userRole === 'trainer'
+    const isMember = userRole === 'member'
+
+    if (isMember) {
+        return <Navigate to="/" replace />
+    }
+
     // Filter states
     const [selectedPlan, setSelectedPlan] = useState('All Plans')
     const [selectedStatus, setSelectedStatus] = useState('All Status')
@@ -45,8 +54,6 @@ export function MembersPage() {
     useEffect(() => {
         async function fetchMembers() {
             if (!user) return
-
-
 
             try {
                 // Use the gym ID associated with the user, or fallback to user ID (though gymId is preferred)
@@ -124,36 +131,29 @@ export function MembersPage() {
                 let gymId = userData?.gymId
 
                 if (!gymId) {
-                    // Check if user already has a gym that just isn't linked in local state
                     try {
                         const existingGyms = await gymService.getGyms()
                         if (existingGyms && existingGyms.length > 0) {
                             gymId = existingGyms[0].id
-                            console.log('Found existing gym, using that:', gymId)
                         }
                     } catch (err) {
                         console.warn('Error checking for existing gyms:', err)
                     }
 
                     if (!gymId) {
-                        // Try to auto-create gym
                         const newGymId = await createGym('My Gym')
                         if (newGymId) {
                             gymId = newGymId
                             showSuccess('Gym Created', 'A new Gym Profile has been created for you.')
                         } else {
-                            console.error('No Gym ID found and failed to create one')
                             throw new Error('User is not associated with a Gym. Please contact support.')
                         }
                     }
                 }
 
-                // Check subscription limits before adding member
                 let canAdd = await subscriptionService.canAddMember(gymId)
 
-                // Self-healing: If no active subscription, try to create one and re-check
                 if (!canAdd.allowed && canAdd.reason === 'No active subscription found') {
-                    console.log('No subscription found, attempting to activate Free plan...')
                     const activated = await subscriptionService.activateFreePlan(gymId)
                     if (activated) {
                         canAdd = await subscriptionService.canAddMember(gymId)
@@ -258,7 +258,6 @@ export function MembersPage() {
                     )}
                 </div>
                 <div className={styles.actionButtons}>
-                    {/* Filter Button with Dropdown */}
                     <div className={styles.filterWrapper}>
                         <Button
                             variant="ghost"
@@ -335,16 +334,17 @@ export function MembersPage() {
                     <Button variant="ghost" size="sm" onClick={handleExport}>
                         <Download size={16} /> Export
                     </Button>
-                    <Button size="sm" onClick={() => {
-                        resetForm()
-                        setShowAddModal(true)
-                    }}>
-                        <Plus size={16} /> Add Member
-                    </Button>
+                    {!isTrainer && (
+                        <Button size="sm" onClick={() => {
+                            resetForm()
+                            setShowAddModal(true)
+                        }}>
+                            <Plus size={16} /> Add Member
+                        </Button>
+                    )}
                 </div>
             </div>
 
-            {/* Active Filters Tags */}
             {activeFiltersCount > 0 && (
                 <div className={styles.activeFilters}>
                     {selectedPlan !== 'All Plans' && (
@@ -368,12 +368,10 @@ export function MembersPage() {
                 </div>
             )}
 
-            {/* Results count */}
             <p className={styles.resultsCount}>
                 Showing {filteredMembers.length} of {members.length} members
             </p>
 
-            {/* Members Table */}
             <Card padding="sm">
                 <table className={styles.table}>
                     <thead>
@@ -421,20 +419,26 @@ export function MembersPage() {
                                     <td>{member.joined_date}</td>
                                     <td>
                                         <div className={styles.actionButtons}>
-                                            <button
-                                                className={styles.iconBtn}
-                                                onClick={() => startEditMember(member)}
-                                                title="Edit"
-                                            >
-                                                <Edit size={16} />
-                                            </button>
-                                            <button
-                                                className={`${styles.iconBtn} ${styles.deleteBtn}`}
-                                                onClick={() => handleDeleteMember(member.id)}
-                                                title="Delete"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                            {!isTrainer ? (
+                                                <>
+                                                    <button
+                                                        className={styles.iconBtn}
+                                                        onClick={() => startEditMember(member)}
+                                                        title="Edit"
+                                                    >
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button
+                                                        className={`${styles.iconBtn} ${styles.deleteBtn}`}
+                                                        onClick={() => handleDeleteMember(member.id)}
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>View Only</span>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -444,7 +448,6 @@ export function MembersPage() {
                 </table>
             </Card>
 
-            {/* Add Member Modal */}
             {showAddModal && (
                 <div className={styles.modalOverlay} onClick={() => setShowAddModal(false)}>
                     <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -455,58 +458,69 @@ export function MembersPage() {
                             </button>
                         </div>
                         <form onSubmit={handleAddMember} className={styles.modalForm}>
-                            <div className={styles.formGroup}>
-                                <label htmlFor="name">Full Name *</label>
+                            <div className="premium-form-group">
+                                <label className="premium-label" htmlFor="name"><User size={16} /> Full Name *</label>
                                 <input
                                     type="text"
                                     id="name"
                                     required
                                     value={newMember.full_name}
                                     onChange={(e) => setNewMember({ ...newMember, full_name: e.target.value })}
-                                    placeholder="Enter member name"
+                                    placeholder="e.g. Rahul Sharma"
+                                    className="premium-input"
                                 />
                             </div>
-                            <div className={styles.formGroup}>
-                                <label htmlFor="phone">Phone Number *</label>
-                                <input
-                                    type="tel"
-                                    id="phone"
-                                    required
-                                    value={newMember.phone}
-                                    onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
-                                    placeholder="+91 98765 43210"
-                                />
+
+                            <div className="premium-form-row">
+                                <div className="premium-form-group">
+                                    <label className="premium-label" htmlFor="phone"><Phone size={16} /> Phone Number *</label>
+                                    <input
+                                        type="tel"
+                                        id="phone"
+                                        required
+                                        value={newMember.phone}
+                                        onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
+                                        placeholder="+91 98765 43210"
+                                        className="premium-input"
+                                    />
+                                </div>
+                                <div className="premium-form-group">
+                                    <label className="premium-label" htmlFor="email"><Mail size={16} /> Email Address *</label>
+                                    <input
+                                        type="email"
+                                        id="email"
+                                        required
+                                        value={newMember.email}
+                                        onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
+                                        placeholder="rahul@example.com"
+                                        className="premium-input"
+                                    />
+                                </div>
                             </div>
-                            <div className={styles.formGroup}>
-                                <label htmlFor="email">Email Address *</label>
-                                <input
-                                    type="email"
-                                    id="email"
-                                    required
-                                    value={newMember.email}
-                                    onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
-                                    placeholder="member@email.com"
-                                />
-                            </div>
-                            <div className={styles.formRow}>
-                                <div className={styles.formGroup}>
-                                    <label htmlFor="plan">Membership Plan</label>
+
+                            <div className="premium-form-row">
+                                <div className="premium-form-group">
+                                    <label className="premium-label" htmlFor="plan"><CreditCard size={16} /> Membership Plan</label>
                                     <select
                                         id="plan"
                                         value={newMember.plan}
                                         onChange={(e) => setNewMember({ ...newMember, plan: e.target.value })}
+                                        className="premium-input"
+                                        style={{ appearance: 'auto' }}
                                     >
                                         {plans.filter(p => p !== 'All Plans').map(plan => (
                                             <option key={plan} value={plan}>{plan}</option>
                                         ))}
                                     </select>
                                 </div>
-                                <div className={styles.formGroup}>
-                                    <label htmlFor="trainer">Assigned Trainer</label>
+                                <div className="premium-form-group">
+                                    <label className="premium-label" htmlFor="trainer"><Dumbbell size={16} /> Assigned Trainer</label>
                                     <select
                                         id="trainer"
                                         value={newMember.trainer_name}
                                         onChange={(e) => setNewMember({ ...newMember, trainer_name: e.target.value })}
+                                        className="premium-input"
+                                        style={{ appearance: 'auto' }}
                                     >
                                         {trainers.filter(t => t !== 'All Trainers').map(trainer => (
                                             <option key={trainer} value={trainer}>{trainer}</option>
@@ -514,11 +528,12 @@ export function MembersPage() {
                                     </select>
                                 </div>
                             </div>
+
                             <div className={styles.modalActions}>
                                 <Button type="button" variant="ghost" onClick={resetForm}>
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={isSubmitting}>
+                                <Button type="submit" disabled={isSubmitting} style={{ padding: '0 2rem' }}>
                                     {isSubmitting ? 'Saving...' : (editingMemberId ? 'Update Member' : 'Add Member')}
                                 </Button>
                             </div>

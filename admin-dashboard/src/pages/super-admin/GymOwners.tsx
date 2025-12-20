@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { adminService, GymDetails } from '../../services/adminService'
+import { auditService } from '../../services/auditService'
 import { Search, Trash2, Building2, MapPin, User, Mail, Phone } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
 import { showError, showConfirm, showSuccess } from '../../utils/swal'
+import styles from './GymOwners.module.css'
 
 export function GymOwnersPage() {
     const [gyms, setGyms] = useState<GymDetails[]>([])
@@ -34,6 +36,7 @@ export function GymOwnersPage() {
 
         try {
             await adminService.deleteGym(gymId)
+            await auditService.logAction('delete', 'gym', gymId, { name: gymName })
             showSuccess('Deleted', 'Gym has been deleted successfully.')
             loadGyms()
         } catch (error: any) {
@@ -49,127 +52,106 @@ export function GymOwnersPage() {
     )
 
     return (
-        <div style={{ padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div className={styles.page}>
+            <div className={styles.header}>
                 <div>
-                    <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Gym Owners</h1>
-                    <p style={{ color: '#64748b' }}>Manage all registered gyms and partners</p>
+                    <h1 className={styles.title}>Gym Partners</h1>
+                    <p className={styles.subtitle}>Manage all registered gyms and platform partners</p>
                 </div>
 
-                {/* Search Bar */}
-                <div style={{ position: 'relative', width: '300px' }}>
-                    <Search
-                        size={20}
-                        color="#94a3b8"
-                        style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Search gym, email or city..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{
-                            width: '100%',
-                            padding: '10px 10px 10px 40px',
-                            borderRadius: '8px',
-                            border: '1px solid #e2e8f0',
-                            outline: 'none'
-                        }}
-                    />
+                <div className={styles.toolbar}>
+                    <div className={styles.searchBox}>
+                        <Search size={20} className={styles.searchIcon} />
+                        <input
+                            type="text"
+                            placeholder="Search gym, email or city..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className={styles.searchInput}
+                        />
+                    </div>
                 </div>
             </div>
 
-            <Card padding="sm">
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                        <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+            <Card padding="none">
+                <div className={styles.tableWrapper}>
+                    <table className={styles.table}>
+                        <thead>
                             <tr>
-                                <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Gym Details</th>
-                                <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Owner Info</th>
-                                <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Owner Location</th>
-                                <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Gym City Location</th>
-                                <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Plan</th>
-                                <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Actions</th>
+                                <th>Gym Details</th>
+                                <th>Owner Info</th>
+                                <th>Owner Location</th>
+                                <th>Gym Location</th>
+                                <th>Plan</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan={5} style={{ padding: '2rem', textAlign: 'center' }}>Loading...</td></tr>
+                                <tr><td colSpan={6} className={styles.empty}>Loading partners...</td></tr>
                             ) : filteredGyms.length > 0 ? (
                                 filteredGyms.map(gym => {
-                                    const activeSub = gym.subscription?.[0]
                                     return (
-                                        <tr key={gym.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                            <td style={{ padding: '1rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    <div style={{ padding: '8px', background: '#eff6ff', borderRadius: '8px', color: '#3b82f6' }}>
-                                                        <Building2 size={20} />
+                                        <tr key={gym.id}>
+                                            <td>
+                                                <div className={styles.gymCell}>
+                                                    <div className={styles.iconBox}>
+                                                        <Building2 size={24} />
                                                     </div>
                                                     <div>
-                                                        <div style={{ fontWeight: '600', color: '#1e293b' }}>{gym.name}</div>
-                                                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{gym.type}</div>
+                                                        <div className={styles.gymName}>{gym.name}</div>
+                                                        <div className={styles.gymType}>{gym.type}</div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td style={{ padding: '1rem' }}>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        <User size={14} color="#64748b" /> {gym.owner?.display_name || 'N/A'}
+                                            <td>
+                                                <div className={styles.contactInfo}>
+                                                    <div className={styles.contactItem}>
+                                                        <User size={14} /> {gym.owner?.display_name || 'N/A'}
                                                     </div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        <Mail size={14} color="#64748b" /> {gym.owner?.email}
+                                                    <div className={styles.contactItem}>
+                                                        <Mail size={14} /> {gym.owner?.email}
                                                     </div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        <Phone size={14} color="#64748b" /> {gym.owner?.phone}
+                                                    <div className={styles.contactItem}>
+                                                        <Phone size={14} /> {gym.owner?.phone || 'N/A'}
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td style={{ padding: '1rem' }}>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        <MapPin size={14} color="#64748b" /> {gym.owner?.city || 'N/A'}
+                                            <td>
+                                                <div className={styles.locationInfo}>
+                                                    <div className={styles.locationMain}>
+                                                        <MapPin size={14} /> {gym.owner?.city || 'N/A'}
                                                     </div>
-                                                    <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginLeft: '20px' }}>{gym.owner?.address || 'N/A'}</div>
+                                                    <div className={styles.locationSub}>{gym.owner?.address || 'N/A'}</div>
                                                 </div>
                                             </td>
-                                            <td style={{ padding: '1rem' }}>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        <MapPin size={14} color="#64748b" /> {gym.city || 'N/A'}
+                                            <td>
+                                                <div className={styles.locationInfo}>
+                                                    <div className={styles.locationMain}>
+                                                        <MapPin size={14} /> {gym.city || 'N/A'}
                                                     </div>
-                                                    <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginLeft: '20px' }}>{gym.location || 'N/A'}</div>
+                                                    <div className={styles.locationSub}>{gym.location || 'N/A'}</div>
                                                 </div>
                                             </td>
-                                            <td style={{ padding: '1rem' }}>
-                                                {activeSub ? (
-                                                    <span style={{
-                                                        padding: '4px 10px',
-                                                        borderRadius: '20px',
-                                                        fontSize: '0.8rem',
-                                                        fontWeight: '600',
-                                                        background: '#fef3c7',
-                                                        color: '#b45309'
-                                                    }}>
-                                                        {activeSub.plan?.name || 'Free'}
-                                                    </span>
-                                                ) : (
-                                                    <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>No Plan</span>
-                                                )}
+                                            <td>
+                                                <span className={styles.planBadge}>
+                                                    {gym.subscription?.[0]?.plan?.name || 'Free Tier'}
+                                                </span>
                                             </td>
-                                            <td style={{ padding: '1rem' }}>
+                                            <td>
                                                 <button
                                                     onClick={() => handleDelete(gym.id, gym.name)}
-                                                    style={{ padding: '8px', background: '#fee2e2', color: '#ef4444', borderRadius: '6px', border: 'none', cursor: 'pointer' }}
+                                                    className={styles.deleteBtn}
                                                     title="Delete Gym"
                                                 >
-                                                    <Trash2 size={16} />
+                                                    <Trash2 size={18} />
                                                 </button>
                                             </td>
                                         </tr>
                                     )
                                 })
                             ) : (
-                                <tr><td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>No gyms found matching your search.</td></tr>
+                                <tr><td colSpan={6} className={styles.empty}>No gyms found matching your search.</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -178,3 +160,4 @@ export function GymOwnersPage() {
         </div>
     )
 }
+

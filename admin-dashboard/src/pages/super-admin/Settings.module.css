@@ -1,0 +1,92 @@
+.page {
+    padding: var(--space-8);
+    max-width: 1000px;
+    margin: 0 auto;
+    animation: fadeIn var(--transition-normal);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.title {
+    font-size: var(--text-3xl);
+    font-weight: 800;
+    margin-bottom: var(--space-2);
+}
+
+.subtitle {
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-10);
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+    border-bottom: 1px solid var(--color-border-light);
+    padding-bottom: var(--space-4);
+}
+
+.iconBox {
+    padding: 10px;
+    background: var(--color-info-light);
+    border-radius: var(--radius-md);
+    color: var(--color-info);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sectionTitle {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.sectionSubtitle {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+.hint {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.inputWrapper {
+    position: relative;
+}
+
+.eyeBtn {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    transition: color var(--transition-fast);
+}
+
+.eyeBtn:hover {
+    color: var(--color-gold-primary);
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-4);
+    margin-top: var(--space-8);
+}

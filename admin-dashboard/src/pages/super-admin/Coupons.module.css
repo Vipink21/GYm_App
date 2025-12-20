@@ -1,0 +1,153 @@
+.page {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3rem;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+.subtitle {
+    color: var(--color-text-secondary);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+.couponCard {
+    position: relative;
+    border: 2px dashed var(--color-border);
+    transition: all 0.2s;
+    overflow: hidden;
+}
+
+.couponCard:hover {
+    border-color: var(--color-gold-primary);
+    transform: translateY(-4px);
+}
+
+.couponCard.inactive {
+    opacity: 0.6;
+    background: #f8fafc;
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.codeBox {
+    background: #fffbeb;
+    color: var(--color-gold-primary);
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.05em;
+}
+
+.cardActions {
+    display: flex;
+    gap: 10px;
+}
+
+.actionBtn,
+.deleteBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    padding: 4px;
+    transition: color 0.2s;
+}
+
+.actionBtn.active {
+    color: #16a34a;
+}
+
+.deleteBtn:hover {
+    color: #dc2626;
+}
+
+.discountValue {
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--color-text-primary);
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.discountLabel {
+    font-size: 1rem;
+    color: var(--color-text-muted);
+}
+
+.statsRow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border-light);
+}
+
+.statItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+}
+
+.disabledBadge {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    background: #dc2626;
+    color: white;
+    padding: 8px 30px;
+    font-weight: 900;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+    pointer-events: none;
+}
+
+.modalForm {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1rem 0;
+}
+
+.modalActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 5rem;
+    color: var(--color-text-muted);
+}

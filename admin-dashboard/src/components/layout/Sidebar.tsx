@@ -10,19 +10,24 @@ import {
     Dumbbell,
     LogOut,
     Crown,
-    Building2
+    Building2,
+    Tag
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import styles from './Sidebar.module.css'
+interface NavItem {
+    name?: string
+    path?: string
+    icon?: any
+    divider?: boolean
+}
 
 export function Sidebar() {
-    const { userData, signOut } = useAuth()
+    const { userData, signOut, isSuperAdmin } = useAuth()
     const location = useLocation()
+    const userRole = userData?.role || 'member'
 
-    // Check if the user is a super admin based on their role
-    const isSuperAdmin = userData?.role === 'superadmin' || userData?.role === 'super_admin'
-
-    const gymOwnerNav = [
+    const gymOwnerNav: NavItem[] = [
         { name: 'Dashboard', path: '/', icon: Home },
         { name: 'Members', path: '/members', icon: Users },
         { name: 'Trainers', path: '/trainers', icon: UserCheck },
@@ -36,14 +41,40 @@ export function Sidebar() {
         { name: 'Settings', path: '/settings', icon: Settings },
     ]
 
-    const superAdminNav = [
-        { name: 'Dashboard', path: '/admin', icon: Home },
-        { name: 'Gym Owners', path: '/admin/gyms', icon: Building2 },
-        { name: 'Gym Owner Plan Data', path: '/admin/plans', icon: Crown },
-        { name: 'Settings', path: '/admin/settings', icon: Settings },
+    const trainerNav: NavItem[] = [
+        { name: 'Work Dashboard', path: '/', icon: Home },
+        { name: 'Member List', path: '/members', icon: Users },
+        { name: 'Class Schedule', path: '/classes', icon: Calendar },
+        { name: 'Mark Attendance', path: '/attendance', icon: ClipboardCheck },
+        { name: 'Profile Settings', path: '/settings', icon: Settings },
     ]
 
-    const navigation = isSuperAdmin ? superAdminNav : gymOwnerNav
+    const memberNav: NavItem[] = [
+        { name: 'My Profile', path: '/', icon: Home },
+        { name: 'Track Attendance', path: '/attendance', icon: ClipboardCheck },
+        { name: 'Book Classes', path: '/classes', icon: Calendar },
+        { name: 'My Payments', path: '/payments', icon: CreditCard },
+        { name: 'Settings', path: '/settings', icon: Settings },
+    ]
+
+    const superAdminNav: NavItem[] = [
+        { name: 'Dashboard', path: '/admin', icon: Home },
+        { name: 'Gym Partners', path: '/admin/gyms', icon: Building2 },
+        { name: 'Revenue & Subs', path: '/admin/subscriptions', icon: CreditCard },
+        { name: 'SaaS Plans', path: '/admin/plans', icon: Crown },
+        { divider: true },
+        { name: 'Broadcast', path: '/admin/broadcast', icon: ClipboardCheck },
+        { name: 'Coupons', path: '/admin/coupons', icon: Tag },
+        { name: 'Exercises', path: '/admin/exercises', icon: Dumbbell },
+        { name: 'Audit Logs', path: '/admin/audit', icon: ClipboardCheck },
+        { name: 'Support', path: '/admin/support', icon: Users },
+        { name: 'System Settings', path: '/admin/settings', icon: Settings },
+    ]
+
+    let navigation: NavItem[] = memberNav
+    if (isSuperAdmin) navigation = superAdminNav
+    else if (userRole === 'admin' || userRole === 'gym_owner') navigation = gymOwnerNav
+    else if (userRole === 'trainer') navigation = trainerNav
 
     return (
         <aside className={styles.sidebar}>
@@ -58,7 +89,7 @@ export function Sidebar() {
 
             {/* Navigation */}
             <nav className={styles.nav}>
-                {navigation.map((item: any, index: number) => {
+                {navigation.map((item, index) => {
                     if (item.divider) {
                         return <div key={index} className={styles.divider} />
                     }
@@ -69,7 +100,7 @@ export function Sidebar() {
                     return (
                         <NavLink
                             key={item.path}
-                            to={item.path}
+                            to={item.path || '#'}
                             className={`${styles.navItem} ${isActive ? styles.active : ''}`}
                         >
                             <Icon size={20} />

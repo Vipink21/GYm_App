@@ -1,30 +1,46 @@
-import { useState, useMemo } from 'react'
 import { Search, Filter, Download, CreditCard, Banknote, Smartphone, Building, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import styles from './PaymentsPage.module.css'
 import { useAuth } from '../contexts/AuthContext'
 import { paymentService } from '../services/paymentService'
-import { useEffect } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { Navigate } from 'react-router-dom'
 
 export function PaymentsPage() {
     // Data State
     const { user, userData } = useAuth()
     const [allTransactions, setTransactions] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+
+    const userRole = userData?.role || 'member'
+
+    if (userRole === 'trainer') {
+        return <Navigate to="/" replace />
+    }
 
     useEffect(() => {
         async function fetchPayments() {
             if (!user) return
             try {
-                const gymId = userData?.gymId || user.id
-                if (gymId) {
-                    const data = await paymentService.getTransactions(gymId)
+                if (userRole === 'member') {
+                    const data = await paymentService.getMemberTransactions(user.id)
                     setTransactions(data)
+                } else {
+                    const gymId = userData?.gymId || user.id
+                    if (gymId) {
+                        const data = await paymentService.getTransactions(gymId)
+                        setTransactions(data)
+                    }
                 }
-            } catch (e) { console.error(e) }
+            } catch (e) {
+                console.error('Error fetching payments:', e)
+            } finally {
+                setLoading(false)
+            }
         }
         fetchPayments()
-    }, [user, userData])
+    }, [user, userData, userRole])
 
     const [filters, setFilters] = useState({
         search: '',
@@ -124,6 +140,10 @@ export function PaymentsPage() {
             case 'merchandise': return 'Merchandise'
             default: return type
         }
+    }
+
+    if (loading) {
+        return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading transactions...</div>
     }
 
     return (

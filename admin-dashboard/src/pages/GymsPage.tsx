@@ -28,7 +28,8 @@ export function GymsPage() {
 
     const fetchGyms = async () => {
         try {
-            const data = await gymService.getGyms()
+            if (!user) return
+            const data = await gymService.getGyms(user.id, isSuperAdmin)
             setGyms(data)
         } catch (error) {
             console.error(error)
@@ -39,7 +40,7 @@ export function GymsPage() {
 
     useEffect(() => {
         fetchGyms()
-    }, [user])
+    }, [user, isSuperAdmin])
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault()

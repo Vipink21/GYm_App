@@ -91,5 +91,27 @@ export const classService = {
 
         if (error) throw error
         return true
+    },
+
+    async bookClass(id: string) {
+        // Fetch current enrolled count
+        const { data: cls, error: fetchError } = await supabase
+            .from('classes')
+            .select('enrolled_count, capacity')
+            .eq('id', id)
+            .single()
+
+        if (fetchError) throw fetchError
+        if (cls.enrolled_count >= cls.capacity) throw new Error('Class is full')
+
+        const { data, error } = await supabase
+            .from('classes')
+            .update({ enrolled_count: (cls.enrolled_count || 0) + 1 })
+            .eq('id', id)
+            .select()
+            .single()
+
+        if (error) throw error
+        return data
     }
 }

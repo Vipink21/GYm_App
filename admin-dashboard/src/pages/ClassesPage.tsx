@@ -44,7 +44,8 @@ const groupClasses = (classes: GymClass[]) => {
 }
 
 export function ClassesPage() {
-    const { user } = useAuth()
+    const { user, userData } = useAuth()
+    const userRole = userData?.role || 'member'
     const [schedule, setSchedule] = useState({ morning: [] as GymClass[], afternoon: [] as GymClass[], evening: [] as GymClass[] })
     const [loading, setLoading] = useState(true)
     const [showAddModal, setShowAddModal] = useState(false)
@@ -220,12 +221,38 @@ export function ClassesPage() {
         }
     }
 
+    const handleBookClass = async (id: string) => {
+        setIsSubmitting(true)
+        try {
+            await classService.bookClass(id)
+            // Update local state
+            setSchedule(prev => {
+                const updateList = (list: GymClass[]) => list.map(c =>
+                    c.id === id ? { ...c, booked: c.booked + 1 } : c
+                )
+                return {
+                    morning: updateList(prev.morning),
+                    afternoon: updateList(prev.afternoon),
+                    evening: updateList(prev.evening)
+                }
+            })
+            showSuccess('Booked!', 'You have successfully booked a spot in this class.')
+        } catch (err: any) {
+            console.error('Error booking class:', err)
+            showError('Booking Failed', err.message || 'Could not book class')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
     const renderClassCard = (cls: GymClass) => {
         const status = getCapacityStatus(cls.booked, cls.capacity)
+        const isFull = cls.booked >= cls.capacity
+
         return (
             <div
                 key={cls.id}
-                className={`${styles.classCard} ${styles[cls.color]}`}
+                className={`${styles.classCard} ${styles[cls.color]} ${userRole === 'member' ? styles.memberCard : ''}`}
                 style={{ gridColumn: cls.day_of_week + 1 }}
             >
                 <div className={styles.classHeader}>
@@ -241,6 +268,20 @@ export function ClassesPage() {
                     <span className={styles.classTrainer}>{cls.trainer_name}</span>
                     <span className={styles.classRoom}>{cls.room}</span>
                 </div>
+                {userRole === 'member' && !isFull && (
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        className={styles.bookButton}
+                        onClick={() => handleBookClass(cls.id)}
+                        disabled={isSubmitting}
+                    >
+                        Book Spot
+                    </Button>
+                )}
+                {userRole === 'member' && isFull && (
+                    <span className={styles.fullLabel}>Class Full</span>
+                )}
             </div>
         )
     }
@@ -294,9 +335,11 @@ export function ClassesPage() {
                     >
                         <Calendar size={16} /> {viewMode === 'week' ? 'Month View' : 'Week View'}
                     </Button>
-                    <Button size="sm" onClick={() => setShowAddModal(true)}>
-                        <Plus size={16} /> Add Class
-                    </Button>
+                    {userRole !== 'member' && (
+                        <Button size="sm" onClick={() => setShowAddModal(true)}>
+                            <Plus size={16} /> Add Class
+                        </Button>
+                    )}
                 </div>
             </div>
 

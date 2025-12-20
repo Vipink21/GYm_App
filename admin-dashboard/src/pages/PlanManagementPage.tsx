@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, History, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react'
+import { Plus, Edit2, History, ToggleLeft, ToggleRight, Trash2, Tag, Type, Info, IndianRupee, Users, Dumbbell } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Modal } from '../components/ui/Modal'
 import { planManagementService, Plan } from '../services/planManagementService'
+import { auditService } from '../services/auditService'
 import { useAuth } from '../contexts/AuthContext'
 import styles from './MembersPage.module.css'
 import { showError, showConfirm, showSuccess } from '../utils/swal'
@@ -47,8 +48,10 @@ export function PlanManagementPage() {
         try {
             if (editingPlan) {
                 await planManagementService.updatePlan(editingPlan.id, formData)
+                await auditService.logAction('update', 'saas_plan', editingPlan.id, { name: formData.name })
             } else {
-                await planManagementService.createPlan(formData as any)
+                const newPlan = await planManagementService.createPlan(formData as any)
+                await auditService.logAction('create', 'saas_plan', newPlan.id, { name: formData.name })
             }
             setShowModal(false)
             showSuccess('Plan Saved', editingPlan ? 'Plan has been updated successfully.' : 'New plan has been created successfully.')
@@ -58,9 +61,10 @@ export function PlanManagementPage() {
         }
     }
 
-    const handleToggleStatus = async (planId: string, currentStatus: boolean) => {
+    const handleToggleStatus = async (planId: string, currentStatus: boolean, planName: string) => {
         try {
             await planManagementService.togglePlanStatus(planId, !currentStatus)
+            await auditService.logAction(!currentStatus ? 'activate' : 'deactivate', 'saas_plan', planId, { name: planName })
             fetchPlans()
         } catch (error) {
             console.error(error)
@@ -75,7 +79,9 @@ export function PlanManagementPage() {
         if (!result.isConfirmed) return
 
         try {
+            const planToDelete = plans.find(p => p.id === planId)
             await planManagementService.deletePlan(planId)
+            await auditService.logAction('delete', 'saas_plan', planId, { name: planToDelete?.name })
             showSuccess('Deleted', 'Plan has been deleted successfully.')
             fetchPlans()
         } catch (error: any) {
@@ -144,7 +150,7 @@ export function PlanManagementPage() {
                                     <td>
                                         <button
                                             className={styles.actionBtn}
-                                            onClick={() => handleToggleStatus(plan.id, plan.is_active)}
+                                            onClick={() => handleToggleStatus(plan.id, plan.is_active, plan.name)}
                                             title={plan.is_active ? 'Deactivate' : 'Activate'}
                                         >
                                             {plan.is_active ? (
@@ -205,97 +211,101 @@ export function PlanManagementPage() {
             <Modal
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
-                title={editingPlan ? 'Edit Plan' : 'Create New Plan'}
+                title={editingPlan ? 'Edit SaaS Plan' : 'Create New SaaS Plan'}
             >
-                <form onSubmit={handleSave} className={styles.form}>
-                    <div className={styles.formGroup}>
-                        <label>Plan Name *</label>
+                <form onSubmit={handleSave}>
+                    <div className="premium-form-group">
+                        <label className="premium-label"><Type size={16} /> Plan Name *</label>
                         <input
                             type="text"
                             required
                             value={formData.name}
                             onChange={e => setFormData({ ...formData, name: e.target.value })}
-                            className={styles.input}
-                            placeholder="e.g., Pro"
+                            className="premium-input"
+                            placeholder="e.g., Professional Excellence"
                         />
                     </div>
 
-                    <div className={styles.formGroup}>
-                        <label>Description</label>
+                    <div className="premium-form-group">
+                        <label className="premium-label"><Info size={16} /> Short Description</label>
                         <textarea
                             value={formData.description}
                             onChange={e => setFormData({ ...formData, description: e.target.value })}
-                            className={styles.input}
-                            rows={2}
-                            placeholder="Plan description"
+                            className="premium-input"
+                            style={{ height: '80px', resize: 'none', padding: '12px' }}
+                            placeholder="Briefly describe the target audience..."
                         />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div className={styles.formGroup}>
-                            <label>Monthly Price (₹) *</label>
+                    <div className="premium-form-row">
+                        <div className="premium-form-group">
+                            <label className="premium-label"><IndianRupee size={16} /> Monthly Price *</label>
                             <input
                                 type="number"
                                 required
                                 min="0"
                                 value={formData.price_monthly}
                                 onChange={e => setFormData({ ...formData, price_monthly: Number(e.target.value) })}
-                                className={styles.input}
+                                className="premium-input"
+                                placeholder="0"
                             />
                         </div>
 
-                        <div className={styles.formGroup}>
-                            <label>Yearly Price (₹)</label>
+                        <div className="premium-form-group">
+                            <label className="premium-label"><IndianRupee size={16} /> Yearly Price</label>
                             <input
                                 type="number"
                                 min="0"
                                 value={formData.price_yearly}
                                 onChange={e => setFormData({ ...formData, price_yearly: Number(e.target.value) })}
-                                className={styles.input}
+                                className="premium-input"
+                                placeholder="0"
                             />
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                        <div className={styles.formGroup}>
-                            <label>Max Gyms</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+                        <div className="premium-form-group">
+                            <label className="premium-label"><Tag size={16} /> Max Gyms</label>
                             <input
                                 type="number"
                                 min="1"
                                 value={formData.max_gyms}
                                 onChange={e => setFormData({ ...formData, max_gyms: Number(e.target.value) })}
-                                className={styles.input}
+                                className="premium-input"
                             />
                         </div>
 
-                        <div className={styles.formGroup}>
-                            <label>Max Members</label>
+                        <div className="premium-form-group">
+                            <label className="premium-label"><Users size={16} /> Members</label>
                             <input
                                 type="number"
                                 min="0"
                                 value={formData.max_members_per_gym || ''}
                                 onChange={e => setFormData({ ...formData, max_members_per_gym: e.target.value ? Number(e.target.value) : null })}
-                                className={styles.input}
-                                placeholder="Leave empty for unlimited"
+                                className="premium-input"
+                                placeholder="Unlimited"
                             />
                         </div>
 
-                        <div className={styles.formGroup}>
-                            <label>Max Trainers</label>
+                        <div className="premium-form-group">
+                            <label className="premium-label"><Dumbbell size={16} /> Trainers</label>
                             <input
                                 type="number"
                                 min="0"
                                 value={formData.max_trainers_per_gym || ''}
                                 onChange={e => setFormData({ ...formData, max_trainers_per_gym: e.target.value ? Number(e.target.value) : null })}
-                                className={styles.input}
-                                placeholder="Leave empty for unlimited"
+                                className="premium-input"
+                                placeholder="Unlimited"
                             />
                         </div>
                     </div>
 
-                    <div className={styles.modalActions}>
+                    <div className={styles.modalActions} style={{ marginTop: '10px' }}>
                         <Button type="button" variant="ghost" onClick={() => setShowModal(false)}>Cancel</Button>
-                        <Button type="submit">{editingPlan ? 'Update Plan' : 'Create Plan'}</Button>
+                        <Button type="submit" style={{ padding: '0 2rem' }}>
+                            {editingPlan ? 'Update Plan' : 'Create Plan'}
+                        </Button>
                     </div>
                 </form>
             </Modal>

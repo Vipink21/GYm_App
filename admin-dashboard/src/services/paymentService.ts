@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 export interface TransactionUI {
     id: string
     gym_id: string
+    user_id?: string
     member_name: string
     type: string
     plan: string
@@ -25,22 +26,38 @@ export const paymentService = {
             .order('transaction_date', { ascending: false })
 
         if (error) throw error
+        return (data || []).map(paymentService.mapTransaction)
+    },
 
-        return (data || []).map((txn: any) => {
-            const dateObj = new Date(txn.transaction_date)
-            return {
-                id: txn.id, // Or format as 'TXN...' if needed
-                gym_id: txn.gym_id,
-                member_name: txn.user?.display_name || 'Guest',
-                type: 'membership', // needs a column in DB or logic
-                plan: txn.description || 'General Payment',
-                amount: Number(txn.amount),
-                method: txn.payment_method || 'cash',
-                status: txn.status as any,
-                date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                time: dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-            }
-        })
+    async getMemberTransactions(userId: string): Promise<TransactionUI[]> {
+        const { data, error } = await supabase
+            .from('payments')
+            .select(`
+                *,
+                user:users!user_id(display_name)
+            `)
+            .eq('user_id', userId)
+            .order('transaction_date', { ascending: false })
+
+        if (error) throw error
+        return (data || []).map(paymentService.mapTransaction)
+    },
+
+    mapTransaction(txn: any): TransactionUI {
+        const dateObj = new Date(txn.transaction_date)
+        return {
+            id: txn.id,
+            gym_id: txn.gym_id,
+            user_id: txn.user_id,
+            member_name: txn.user?.display_name || 'Guest',
+            type: 'membership',
+            plan: txn.description || 'General Payment',
+            amount: Number(txn.amount),
+            method: txn.payment_method || 'cash',
+            status: txn.status as any,
+            date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            time: dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        }
     },
 
     async createTransaction(paymentData: any) {

@@ -18,6 +18,11 @@ import { SuperAdminDashboard } from './pages/super-admin/Dashboard'
 import { GymOwnersPage } from './pages/super-admin/GymOwners'
 import { SubscriptionsPage } from './pages/super-admin/Subscriptions'
 import { SuperAdminSettings } from './pages/super-admin/Settings'
+import { BroadcastPage } from './pages/super-admin/Broadcast'
+import { ExercisesPage } from './pages/super-admin/Exercises'
+import { AuditLogPage } from './pages/super-admin/AuditLogs'
+import { SupportTicketsPage } from './pages/super-admin/SupportTickets'
+import { CouponsPage } from './pages/super-admin/Coupons'
 
 import { inspectUserTable } from './debug/inspect_users'
 
@@ -60,6 +65,11 @@ function App() {
                     <Route path="/admin/gyms" element={<GymOwnersPage />} />
                     <Route path="/admin/plans" element={<PlanManagementPage />} />
                     <Route path="/admin/subscriptions" element={<SubscriptionsPage />} />
+                    <Route path="/admin/broadcast" element={<BroadcastPage />} />
+                    <Route path="/admin/exercises" element={<ExercisesPage />} />
+                    <Route path="/admin/audit" element={<AuditLogPage />} />
+                    <Route path="/admin/coupons" element={<CouponsPage />} />
+                    <Route path="/admin/support" element={<SupportTicketsPage />} />
                     <Route path="/admin/settings" element={<SuperAdminSettings />} />
                 </Route>
 

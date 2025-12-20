@@ -26,46 +26,61 @@ export const attendanceService = {
             .order('check_in_time', { ascending: false })
 
         if (error) throw error
+        return (data || []).map(attendanceService.mapRecord)
+    },
 
-        return (data || []).map((record: any) => {
-            const checkIn = new Date(record.check_in_time)
-            const checkOut = record.check_out_time ? new Date(record.check_out_time) : null
+    async getMemberAttendance(userId: string): Promise<AttendanceUI[]> {
+        const { data, error } = await supabase
+            .from('attendance')
+            .select(`
+                *,
+                user:users!user_id(display_name, trainer_details) 
+            `)
+            .eq('user_id', userId)
+            .order('check_in_time', { ascending: false })
 
-            // Calculate duration
-            let durationStr = null
-            if (checkOut) {
-                const diffMs = checkOut.getTime() - checkIn.getTime()
-                const hours = Math.floor(diffMs / (1000 * 60 * 60))
-                const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
-                durationStr = `${hours}h ${mins}m`
-            }
+        if (error) throw error
+        return (data || []).map(attendanceService.mapRecord)
+    },
 
-            return {
-                id: record.id,
-                gym_id: record.gym_id,
-                user_id: record.user_id,
-                member_name: record.user?.display_name || 'Unknown Member', // Handle users without profile
-                check_in_time: checkIn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                check_out_time: checkOut?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || null,
-                duration: durationStr,
-                type: record.type,
-                status: record.status,
-                method: 'Manual', // Database doesn't have method column yet, default to Manual or infer
-                trainer_name: null // Attendance table doesn't link trainer directly usually, unless for a class
-            }
-        })
+    mapRecord(record: any): AttendanceUI {
+        const checkIn = new Date(record.check_in_time)
+        const checkOut = record.check_out_time ? new Date(record.check_out_time) : null
+
+        // Calculate duration
+        let durationStr = null
+        if (checkOut) {
+            const diffMs = checkOut.getTime() - checkIn.getTime()
+            const hours = Math.floor(diffMs / (1000 * 60 * 60))
+            const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+            durationStr = `${hours}h ${mins}m`
+        }
+
+        return {
+            id: record.id,
+            gym_id: record.gym_id,
+            user_id: record.user_id,
+            member_name: record.user?.display_name || record.member_name || 'Unknown Member',
+            check_in_time: checkIn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            check_out_time: checkOut?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || null,
+            duration: durationStr,
+            type: record.type,
+            status: record.status,
+            method: record.method || 'Manual',
+            trainer_name: record.trainer_name || null
+        }
     },
 
     async checkIn(checkInData: any) {
-        // Find user by some ID or create a temp record? 
-        // For manual check-in we likely pick a member from a dropdown
-
         const dbRecord = {
             gym_id: checkInData.gym_id,
             user_id: checkInData.member_id,
+            member_name: checkInData.member_name, // Store name in case user record doesn't exist/join fails
             type: 'gym_visit',
             check_in_time: new Date().toISOString(),
-            status: 'present'
+            status: 'present',
+            method: checkInData.method || 'Manual',
+            trainer_name: checkInData.trainer_name
         }
 
         const { data, error } = await supabase

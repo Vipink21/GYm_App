@@ -19,14 +19,19 @@ export interface GymUI {
 }
 
 export const gymService = {
-    async getGyms(): Promise<GymUI[]> {
-        // Fetch valid gyms.
-        // For admin, this will likely only return their own gym due to RLS.
-        // For superadmin, it might return all.
-        const { data, error } = await supabase
+    async getGyms(userId?: string, isSuperAdmin?: boolean): Promise<GymUI[]> {
+        // Build query
+        let query = supabase
             .from('gyms')
             .select('*')
             .order('created_at', { ascending: false })
+
+        // If not super admin and userId is provided, filter by owner
+        if (!isSuperAdmin && userId) {
+            query = query.eq('owner_user_id', userId)
+        }
+
+        const { data, error } = await query
 
         if (error) throw error
 
