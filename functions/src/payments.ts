@@ -117,7 +117,7 @@ export const razorpayWebhook = functions.https.onRequest(async (req, res) => {
 })
 
 async function handlePaymentCaptured(payment: any) {
-    const { order_id, id: paymentId, amount, notes } = payment
+    const { order_id, id: paymentId, amount } = payment
 
     // Find pending payment record
     const paymentQuery = await db

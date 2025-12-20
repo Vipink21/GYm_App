@@ -9,6 +9,7 @@ import { memberService, MemberUI } from '../services/memberService'
 import { subscriptionService } from '../services/subscriptionService'
 import { gymService } from '../services/gymService'
 import { showError, showConfirm, showSuccess } from '../utils/swal'
+import { razorpayService } from '../services/razorpayService'
 
 // Use MemberUI from service
 type Member = MemberUI
@@ -120,6 +121,7 @@ export function MembersPage() {
         setIsSubmitting(true)
         try {
             if (editingMemberId) {
+                // Editing existing member - no payment required
                 await memberService.updateMember(editingMemberId, newMember)
                 // Optimistic update
                 setMembers(members.map(m =>
@@ -127,7 +129,9 @@ export function MembersPage() {
                         ? { ...m, ...newMember, full_name: newMember.full_name, status: newMember.status as any }
                         : m
                 ))
+                resetForm()
             } else {
+                // Adding new member
                 let gymId = userData?.gymId
 
                 if (!gymId) {
@@ -166,29 +170,104 @@ export function MembersPage() {
                     return
                 }
 
-                const newMemberData = {
-                    gym_id: gymId,
-                    ...newMember
-                }
-                const createdUser = await memberService.createMember(newMemberData)
+                // Check if plan requires payment
+                const isFreePlan = razorpayService.isFreeTier(newMember.plan)
 
-                const uiMember: Member = {
-                    id: createdUser.id,
-                    full_name: newMember.full_name,
-                    phone: newMember.phone,
-                    email: newMember.email,
-                    plan: newMember.plan,
-                    status: newMember.status as any,
-                    trainer_name: newMember.trainer_name,
-                    joined_date: new Date().toISOString().split('T')[0]
+                if (!isFreePlan) {
+                    // Get plan price
+                    const planPrice = await razorpayService.getMembershipPlanPrice(newMember.plan, gymId)
+
+                    // Show payment modal
+                    await new Promise((resolve, reject) => {
+                        razorpayService.openMembershipCheckout(
+                            {
+                                gymId,
+                                memberName: newMember.full_name,
+                                memberEmail: newMember.email,
+                                memberPhone: newMember.phone,
+                                planName: newMember.plan,
+                                planPrice
+                            },
+                            async (response) => {
+                                // Payment successful - proceed with member creation
+                                try {
+                                    const newMemberData = {
+                                        gym_id: gymId,
+                                        ...newMember
+                                    }
+                                    const createdUser = await memberService.createMember(newMemberData)
+
+                                    // Update payment record with member ID
+                                    await razorpayService.recordMembershipPayment({
+                                        gymId,
+                                        memberId: createdUser.id,
+                                        amount: planPrice,
+                                        razorpayOrderId: response.razorpay_order_id,
+                                        razorpayPaymentId: response.razorpay_payment_id,
+                                        razorpaySignature: response.razorpay_signature,
+                                        planName: newMember.plan,
+                                        memberName: newMember.full_name
+                                    })
+
+                                    const uiMember: Member = {
+                                        id: createdUser.id,
+                                        full_name: newMember.full_name,
+                                        phone: newMember.phone,
+                                        email: newMember.email,
+                                        plan: newMember.plan,
+                                        status: newMember.status as any,
+                                        trainer_name: newMember.trainer_name,
+                                        joined_date: new Date().toISOString().split('T')[0]
+                                    }
+                                    setMembers([uiMember, ...members])
+
+                                    showSuccess('Success!', 'Payment successful and member registered!')
+                                    resolve(true)
+                                } catch (error: any) {
+                                    console.error('Error creating member after payment:', error)
+                                    showError('Error', 'Payment successful but member registration failed. Please contact support.')
+                                    reject(error)
+                                }
+                            },
+                            (error) => {
+                                // Payment failed or cancelled
+                                console.error('Payment failed:', error)
+                                showError('Payment Failed', error.message || 'Payment was not completed. Member registration cancelled.')
+                                reject(error)
+                            }
+                        )
+                    })
+
+                    resetForm()
+                } else {
+                    // Free plan - no payment required
+                    const newMemberData = {
+                        gym_id: gymId,
+                        ...newMember
+                    }
+                    const createdUser = await memberService.createMember(newMemberData)
+
+                    const uiMember: Member = {
+                        id: createdUser.id,
+                        full_name: newMember.full_name,
+                        phone: newMember.phone,
+                        email: newMember.email,
+                        plan: newMember.plan,
+                        status: newMember.status as any,
+                        trainer_name: newMember.trainer_name,
+                        joined_date: new Date().toISOString().split('T')[0]
+                    }
+                    setMembers([uiMember, ...members])
+
+                    showSuccess('Success!', 'Member registered successfully!')
+                    resetForm()
                 }
-                setMembers([uiMember, ...members])
             }
-
-            resetForm()
         } catch (error: any) {
             console.error('Error saving member:', error)
-            showError('Error', error.message)
+            if (error.message !== 'Payment cancelled by user') {
+                showError('Error', error.message)
+            }
         } finally {
             setIsSubmitting(false)
         }

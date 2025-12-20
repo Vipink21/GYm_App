@@ -4,7 +4,8 @@ import { Dumbbell, Mail, Lock, Eye, EyeOff, User, MapPin, Phone, Building2, Chec
 import { supabase } from '../lib/supabase'
 import { Button } from '../components/ui/Button'
 import styles from './LoginPage.module.css'
-import { showSuccess } from '../utils/swal'
+import { showSuccess, showError } from '../utils/swal'
+import { razorpayService } from '../services/razorpayService'
 
 interface Plan {
     id: string
@@ -100,76 +101,158 @@ export function RegisterPage() {
                 return
             }
 
-            // 1. Sign Up (Auth)
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: {
-                        display_name: formData.full_name,
-                        role: 'gym_owner' // Explicitly setting this role
-                    }
-                }
-            })
+            // Check if plan is free tier
+            const isFreePlan = selectedPlan.price_monthly === 0 || razorpayService.isFreeTier(selectedPlan.name)
 
-            if (authError) throw authError
-            if (!authData.user) throw new Error('Registration failed')
+            console.log('Registration - Plan details:', {
+                planName: selectedPlan.name,
+                price: selectedPlan.price_monthly,
+                isFreePlan
+            });
 
-            const userId = authData.user.id
+            // If paid plan, process payment first
+            if (!isFreePlan) {
+                console.log('Opening payment modal for paid plan...');
 
-            // 2. Update User Profile (Owner Details)
-            const { error: profileError } = await supabase.from('users').update({
-                display_name: formData.full_name,
-                phone: formData.owner_phone,
-                address: formData.owner_address,
-                city: formData.owner_city,
-                // gender? Optional, assume not critical or add back if needed
-            }).eq('id', userId)
-
-            if (profileError) console.error('Profile update warning:', profileError)
-
-            // 3. Create Gym & Subscription (Using RPC to bypass RLS)
-            const { data: gymData, error: gymError } = await supabase.rpc('create_new_gym', {
-                _owner_id: userId,
-                _name: formData.gym_name,
-                _owner_name: formData.full_name,
-                _location: formData.gym_location,
-                _city: formData.gym_city,
-                _type: formData.gym_type,
-                _contact: formData.gym_contact,
-                _plan_id: selectedPlan.id,
-                _price: selectedPlan.price_monthly,
-                _currency: 'INR',
-                _plan_details: selectedPlan,
-                _email: email,
-                _phone: formData.owner_phone,
-                _address: formData.owner_address,
-                _owner_city: formData.owner_city
-            })
-
-            if (gymError) throw gymError
-            const createdGymId = gymData.gym_id
-
-            // 4. Link Gym to User
-            await supabase.from('users').update({ gym_id: createdGymId }).eq('id', userId)
-
-            // Success
-            await showSuccess('Registration Successful!', 'Welcome to FitZone. Please sign in to continue.')
-            navigate('/login')
+                await new Promise((resolve, reject) => {
+                    razorpayService.openMembershipCheckout(
+                        {
+                            gymId: '', // Will be set after gym creation
+                            memberName: formData.full_name,
+                            memberEmail: email,
+                            memberPhone: formData.owner_phone,
+                            planName: selectedPlan.name,
+                            planPrice: selectedPlan.price_monthly
+                        },
+                        async (response) => {
+                            // Payment successful - proceed with registration
+                            console.log('Payment successful:', response);
+                            try {
+                                await completeRegistration(selectedPlan, email, password, response)
+                                resolve(true)
+                            } catch (error) {
+                                console.error('Error in completeRegistration:', error);
+                                reject(error)
+                            }
+                        },
+                        (error) => {
+                            // Payment failed or cancelled
+                            console.error('Payment failed/cancelled:', error);
+                            setIsLoading(false)
+                            if (error.message !== 'Payment cancelled by user') {
+                                showError('Payment Failed', error.message || 'Payment was not completed. Registration cancelled.')
+                            }
+                            reject(error)
+                        }
+                    )
+                })
+            } else {
+                console.log('Free plan - skipping payment');
+                // Free plan - no payment required
+                await completeRegistration(selectedPlan, email, password, null)
+            }
 
         } catch (err: any) {
             console.error('Registration error:', err)
-            if (err.message?.includes('security purposes') || err.message?.includes('rate limit')) {
-                setError('Too many attempts. Please wait a moment or use a different email address.')
-            } else if (err.message?.includes('User already registered')) {
-                setError('This email is already registered. Please sign in or use a different email.')
-            } else {
-                setError(err.message || 'Something went wrong during registration.')
+            if (err.message !== 'Payment cancelled by user') {
+                if (err.message?.includes('security purposes') || err.message?.includes('rate limit')) {
+                    setError('Too many attempts. Please wait a moment or use a different email address.')
+                } else if (err.message?.includes('User already registered')) {
+                    setError('This email is already registered. Please sign in or use a different email.')
+                } else {
+                    setError(err.message || 'Something went wrong during registration.')
+                }
             }
-            // Don't reset step so they can fix data
         } finally {
             setIsLoading(false)
         }
+    }
+
+    // Complete registration after payment (or for free plans)
+    const completeRegistration = async (
+        selectedPlan: Plan,
+        email: string,
+        password: string,
+        paymentResponse: any
+    ) => {
+        // 1. Sign Up (Auth)
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    display_name: formData.full_name,
+                    role: 'gym_owner' // Explicitly setting this role
+                }
+            }
+        })
+
+        if (authError) throw authError
+        if (!authData.user) throw new Error('Registration failed')
+
+        const userId = authData.user.id
+
+        // 2. Update User Profile (Owner Details)
+        const { error: profileError } = await supabase.from('users').update({
+            display_name: formData.full_name,
+            phone: formData.owner_phone,
+            address: formData.owner_address,
+            city: formData.owner_city,
+        }).eq('id', userId)
+
+        if (profileError) console.error('Profile update warning:', profileError)
+
+        // 3. Create Gym & Subscription (Using RPC to bypass RLS)
+        const { data: gymData, error: gymError } = await supabase.rpc('create_new_gym', {
+            _owner_id: userId,
+            _name: formData.gym_name,
+            _owner_name: formData.full_name,
+            _location: formData.gym_location,
+            _city: formData.gym_city,
+            _type: formData.gym_type,
+            _contact: formData.gym_contact,
+            _plan_id: selectedPlan.id,
+            _price: selectedPlan.price_monthly,
+            _currency: 'INR',
+            _plan_details: selectedPlan,
+            _email: email,
+            _phone: formData.owner_phone,
+            _address: formData.owner_address,
+            _owner_city: formData.owner_city
+        })
+
+        if (gymError) throw gymError
+        const createdGymId = gymData.gym_id
+
+        // 4. Link Gym to User
+        await supabase.from('users').update({ gym_id: createdGymId }).eq('id', userId)
+
+        // 5. Record payment if this was a paid plan
+        if (paymentResponse) {
+            try {
+                await razorpayService.recordMembershipPayment({
+                    gymId: createdGymId,
+                    amount: selectedPlan.price_monthly,
+                    razorpayOrderId: paymentResponse.razorpay_order_id,
+                    razorpayPaymentId: paymentResponse.razorpay_payment_id,
+                    razorpaySignature: paymentResponse.razorpay_signature,
+                    planName: selectedPlan.name,
+                    memberName: formData.full_name
+                })
+            } catch (paymentError) {
+                console.error('Error recording payment:', paymentError)
+                // Don't fail registration if payment recording fails
+            }
+        }
+
+        // Success
+        await showSuccess(
+            'Registration Successful!',
+            paymentResponse
+                ? 'Payment received! Welcome to FitZone. Please sign in to continue.'
+                : 'Welcome to FitZone. Please sign in to continue.'
+        )
+        navigate('/login')
     }
 
     return (
