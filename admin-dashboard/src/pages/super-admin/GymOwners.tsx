@@ -86,7 +86,8 @@ export function GymOwnersPage() {
                             <tr>
                                 <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Gym Details</th>
                                 <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Owner Info</th>
-                                <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Location</th>
+                                <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Owner Location</th>
+                                <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Gym City Location</th>
                                 <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Plan</th>
                                 <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Actions</th>
                             </tr>
@@ -126,9 +127,17 @@ export function GymOwnersPage() {
                                             <td style={{ padding: '1rem' }}>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        <MapPin size={14} color="#64748b" /> {gym.city}
+                                                        <MapPin size={14} color="#64748b" /> {gym.owner?.city || 'N/A'}
                                                     </div>
-                                                    <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginLeft: '20px' }}>{gym.location}</div>
+                                                    <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginLeft: '20px' }}>{gym.owner?.address || 'N/A'}</div>
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '1rem' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.9rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <MapPin size={14} color="#64748b" /> {gym.city || 'N/A'}
+                                                    </div>
+                                                    <div style={{ color: '#94a3b8', fontSize: '0.8rem', marginLeft: '20px' }}>{gym.location || 'N/A'}</div>
                                                 </div>
                                             </td>
                                             <td style={{ padding: '1rem' }}>

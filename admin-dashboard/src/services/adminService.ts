@@ -13,6 +13,8 @@ export interface GymDetails {
         display_name: string
         email: string
         phone: string
+        city: string
+        address: string
     }
     subscription: {
         status: string
@@ -32,7 +34,9 @@ export const adminService = {
                 owner:users!owner_user_id (
                     display_name,
                     email,
-                    phone
+                    phone,
+                    city,
+                    address
                 ),
                 subscription:gym_subscriptions (
                     status,

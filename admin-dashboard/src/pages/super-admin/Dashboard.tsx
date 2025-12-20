@@ -110,7 +110,8 @@ export function SuperAdminDashboard() {
                                 <tr>
                                     <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Gym Name</th>
                                     <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Owner</th>
-                                    <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Location</th>
+                                    <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Owner Location</th>
+                                    <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Gym City Location</th>
                                     <th style={{ padding: '1rem', color: '#475569', fontSize: '0.875rem' }}>Plan</th>
                                 </tr>
                             </thead>
@@ -129,7 +130,12 @@ export function SuperAdminDashboard() {
                                             </td>
                                             <td style={{ padding: '1rem' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
-                                                    <MapPin size={14} color="#64748b" /> {gym.city}
+                                                    <MapPin size={14} color="#64748b" /> {gym.owner?.city || 'N/A'}
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '1rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem' }}>
+                                                    <MapPin size={14} color="#64748b" /> {gym.city || 'N/A'}
                                                 </div>
                                             </td>
                                             <td style={{ padding: '1rem' }}>

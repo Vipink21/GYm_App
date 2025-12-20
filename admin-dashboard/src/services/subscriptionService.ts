@@ -233,5 +233,25 @@ export const subscriptionService = {
             console.error('Error activating free plan:', e)
             return false
         }
+    },
+
+    // Upgrade subscription after successful payment
+    async upgradeSubscription(gymId: string, planId: string, billingCycle: 'monthly' | 'yearly') {
+        const { error } = await supabase
+            .from('gym_subscriptions')
+            .update({
+                plan_id: planId,
+                status: 'active',
+                billing_cycle: billingCycle,
+                start_date: new Date().toISOString(),
+                end_date: billingCycle === 'monthly'
+                    ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                    : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+                trial_ends_at: null, // End trial on paid upgrade
+                auto_renew: true
+            })
+            .eq('gym_id', gymId)
+
+        if (error) throw error
     }
 }

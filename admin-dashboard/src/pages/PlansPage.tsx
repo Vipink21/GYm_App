@@ -5,8 +5,8 @@ import { Button } from '../components/ui/Button'
 import styles from './PlansPage.module.css'
 import { useAuth } from '../contexts/AuthContext'
 import { subscriptionService, Plan, Subscription } from '../services/subscriptionService'
+import { razorpayService } from '../services/razorpayService'
 import { showError, showSuccess } from '../utils/swal'
-import Swal from 'sweetalert2'
 
 export function PlansPage() {
     const { userData } = useAuth()
@@ -48,14 +48,53 @@ export function PlansPage() {
         fetchData()
     }, [userData])
 
-    const handleUpgrade = () => {
-        // TODO: Implement payment flow
-        Swal.fire({
-            title: 'Coming Soon',
-            text: 'Payment integration via Razorpay is coming soon! You will be able to subscribe to this plan directly.',
-            icon: 'info',
-            confirmButtonColor: '#D4AF37'
-        })
+    const handleUpgrade = async (plan: Plan) => {
+        if (!userData?.gymId) {
+            showError('Error', 'No gym ID found. Please contact support.')
+            return
+        }
+
+        try {
+            // 1. Create Order
+            setLoading(true)
+            const order = await razorpayService.createOrder(plan, billingCycle)
+
+            // 2. Open Razorpay Checkout
+            await razorpayService.openCheckout(
+                order,
+                plan,
+                {
+                    name: userData.profile.firstName + ' ' + userData.profile.lastName,
+                    email: userData.profile.email,
+                    phone: '' // Could add phone to profile if needed
+                },
+                async (response) => {
+                    try {
+                        // 3. Update subscription in DB
+                        await subscriptionService.upgradeSubscription(
+                            userData.gymId,
+                            plan.id,
+                            billingCycle
+                        )
+
+                        showSuccess(
+                            'Payment Successful!',
+                            `You have been upgraded to the ${plan.name} plan. Transaction ID: ${response.razorpay_payment_id}`
+                        )
+
+                        // 4. Refresh page data
+                        const updatedSub = await subscriptionService.getCurrentSubscription(userData.gymId)
+                        setCurrentSubscription(updatedSub)
+                    } catch (err: any) {
+                        showError('Subscription Update Failed', err.message)
+                    }
+                }
+            )
+        } catch (error: any) {
+            showError('Order Creation Failed', error.message)
+        } finally {
+            setLoading(false)
+        }
     }
 
     const getPlanIcon = (planName: string) => {
@@ -469,7 +508,7 @@ export function PlansPage() {
                                 className={styles.upgradeBtn}
                                 variant={isCurrent ? 'ghost' : isPro ? 'primary' : 'secondary'}
                                 disabled={isCurrent}
-                                onClick={() => handleUpgrade()}
+                                onClick={() => handleUpgrade(plan)}
                                 style={!isCurrent && isPro ? { backgroundColor: color } : {}}
                             >
                                 {isCurrent ? 'Current Plan' : `Upgrade to ${plan.name}`}
