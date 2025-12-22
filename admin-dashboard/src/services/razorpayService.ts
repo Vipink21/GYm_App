@@ -81,11 +81,41 @@ export const razorpayService = {
     },
 
     async createMembershipOrder(amount: number) {
-        // Create order for member registration
-        return {
-            id: `order_${Math.random().toString(36).substring(7)}`,
-            amount: amount * 100, // Razorpay works in paise
-            currency: 'INR'
+        try {
+            console.log('Creating Razorpay order via Supabase Edge Function...');
+
+            // Call Supabase Edge Function to create a real Razorpay order
+            const { data, error } = await supabase.functions.invoke('create-razorpay-order', {
+                body: {
+                    amount: amount,
+                    currency: 'INR',
+                    receipt: `gym_reg_${Date.now()}`,
+                    notes: {
+                        purpose: 'gym_registration',
+                        timestamp: new Date().toISOString()
+                    }
+                }
+            });
+
+            if (error) {
+                console.error('Error creating Razorpay order:', error);
+                throw new Error(error.message || 'Failed to create payment order');
+            }
+
+            if (!data || !data.id) {
+                throw new Error('Invalid order response from server');
+            }
+
+            console.log('Razorpay order created successfully:', data.id);
+
+            return {
+                id: data.id,
+                amount: data.amount,
+                currency: data.currency
+            };
+        } catch (error: any) {
+            console.error('Failed to create membership order:', error);
+            throw new Error(error.message || 'Failed to create payment order. Please try again.');
         }
     },
 
