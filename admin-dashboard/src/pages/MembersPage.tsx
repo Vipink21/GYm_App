@@ -10,17 +10,19 @@ import { subscriptionService } from '../services/subscriptionService'
 import { gymService } from '../services/gymService'
 import { showError, showConfirm, showSuccess } from '../utils/swal'
 import { razorpayService } from '../services/razorpayService'
+import { supabase } from '../lib/supabase'
 
 // Use MemberUI from service
 type Member = MemberUI
 
-const plans = ['All Plans', 'Gold Annual', 'Silver Monthly', 'Platinum', 'Bronze']
+// Plans will be fetched dynamically from the database
 const statuses = ['All Status', 'active', 'expiring', 'expired']
 const trainers = ['All Trainers', 'Sarah M.', 'Mike T.', 'John D.']
 
 export function MembersPage() {
     const { user, userData, createGym } = useAuth()
     const [members, setMembers] = useState<Member[]>([])
+    const [membershipPlans, setMembershipPlans] = useState<string[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
     const [showFilterDropdown, setShowFilterDropdown] = useState(false)
@@ -46,29 +48,43 @@ export function MembersPage() {
         full_name: '',
         phone: '',
         email: '',
-        plan: 'Gold Annual',
+        plan: '',
         trainer_name: 'Sarah M.',
         status: 'active'
     })
 
-    // Fetch members on mount
+    // Fetch members and membership plans on mount
     useEffect(() => {
-        async function fetchMembers() {
+        async function fetchData() {
             if (!user) return
 
             try {
                 // Use the gym ID associated with the user, or fallback to user ID (though gymId is preferred)
                 const gymId = userData?.gymId || user.id
-                const data = await memberService.getMembers(gymId)
-                setMembers(data)
+
+                // Fetch members
+                const membersData = await memberService.getMembers(gymId)
+                setMembers(membersData)
+
+                // Fetch membership plans
+                const { data: plans, error } = await supabase
+                    .from('membership_plans')
+                    .select('name')
+                    .eq('gym_id', gymId)
+                    .eq('is_active', true)
+                    .order('name')
+
+                if (!error && plans) {
+                    setMembershipPlans(plans.map(p => p.name))
+                }
             } catch (error) {
-                console.error('Error fetching members:', error)
+                console.error('Error fetching data:', error)
             } finally {
                 setLoading(false)
             }
         }
 
-        fetchMembers()
+        fetchData()
     }, [user])
 
     // Filter members based on search and filters
@@ -300,7 +316,7 @@ export function MembersPage() {
     }
 
     const resetForm = () => {
-        setNewMember({ full_name: '', phone: '', email: '', plan: 'Gold Annual', trainer_name: 'Sarah M.', status: 'active' })
+        setNewMember({ full_name: '', phone: '', email: '', plan: '', trainer_name: 'Sarah M.', status: 'active' })
         setEditingMemberId(null)
         setShowAddModal(false)
     }
@@ -368,7 +384,8 @@ export function MembersPage() {
                                         value={selectedPlan}
                                         onChange={(e) => setSelectedPlan(e.target.value)}
                                     >
-                                        {plans.map(plan => (
+                                        <option value="All Plans">All Plans</option>
+                                        {membershipPlans.map(plan => (
                                             <option key={plan} value={plan}>{plan}</option>
                                         ))}
                                     </select>
@@ -586,10 +603,16 @@ export function MembersPage() {
                                         onChange={(e) => setNewMember({ ...newMember, plan: e.target.value })}
                                         className="premium-input"
                                         style={{ appearance: 'auto' }}
+                                        required
                                     >
-                                        {plans.filter(p => p !== 'All Plans').map(plan => (
-                                            <option key={plan} value={plan}>{plan}</option>
-                                        ))}
+                                        <option value="">Select your plan</option>
+                                        {membershipPlans.length > 0 ? (
+                                            membershipPlans.map(plan => (
+                                                <option key={plan} value={plan}>{plan}</option>
+                                            ))
+                                        ) : (
+                                            <option value="" disabled>No plans available</option>
+                                        )}
                                     </select>
                                 </div>
                                 <div className="premium-form-group">
