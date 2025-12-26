@@ -13,6 +13,7 @@ import { PaymentsPage } from './pages/PaymentsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { GymsPage } from './pages/GymsPage'
 import { PlansPage } from './pages/PlansPage'
+import { MembershipPlansPage } from './pages/MembershipPlansPage'
 import { PlanManagementPage } from './pages/PlanManagementPage'
 import { SuperAdminDashboard } from './pages/super-admin/Dashboard'
 import { GymOwnersPage } from './pages/super-admin/GymOwners'
@@ -58,7 +59,7 @@ function App() {
                     <Route path="/payments" element={<PaymentsPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/gyms" element={<GymsPage />} />
-                    <Route path="/plans" element={<PlansPage />} />
+                    <Route path="/plans" element={<MembershipPlansPage />} />
 
                     {/* Super Admin Routes */}
                     <Route path="/admin" element={<SuperAdminDashboard />} />

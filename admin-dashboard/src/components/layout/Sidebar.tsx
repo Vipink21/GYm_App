@@ -37,7 +37,7 @@ export function Sidebar() {
         { name: 'Payments', path: '/payments', icon: CreditCard },
         { divider: true },
         { name: 'Gym Profile', path: '/gyms', icon: Dumbbell },
-        { name: 'My Plan', path: '/plans', icon: Crown },
+        { name: 'Membership Plans', path: '/plans', icon: Crown },
         { name: 'Settings', path: '/settings', icon: Settings },
     ]
 
